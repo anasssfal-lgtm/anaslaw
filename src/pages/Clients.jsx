@@ -16,6 +16,20 @@ function Clients() {
     notes: "",
   });
 
+  const [expandedClientId, setExpandedClientId] = useState(null);
+  const [showAddCaseFor, setShowAddCaseFor] = useState(null);
+
+  const [caseForm, setCaseForm] = useState({
+    case_number: "",
+    file_no: "",
+    case_type: "",
+    court: "",
+    lawyer: "",
+    opponent_name: "",
+    status: "متداولة",
+    notes: "",
+  });
+
   useEffect(() => {
     loadData();
   }, []);
@@ -28,16 +42,8 @@ function Clients() {
       { data: casesData, error: casesError },
       { data: sessionsData, error: sessionsError },
     ] = await Promise.all([
-      supabase
-        .from("clients")
-        .select("*")
-        .order("id", { ascending: false }),
-
-      supabase
-        .from("cases")
-        .select("*")
-        .limit(3000),
-
+      supabase.from("clients").select("*").order("id", { ascending: false }),
+      supabase.from("cases").select("*").limit(3000),
       supabase
         .from("sessions")
         .select("*")
@@ -50,12 +56,10 @@ function Clients() {
       alert("خطأ في جلب الموكلين: " + clientsError.message);
       return;
     }
-
     if (casesError) {
       alert("خطأ في جلب القضايا: " + casesError.message);
       return;
     }
-
     if (sessionsError) {
       alert("خطأ في جلب الجلسات: " + sessionsError.message);
       return;
@@ -68,7 +72,6 @@ function Clients() {
 
   async function addClient(e) {
     e.preventDefault();
-
     const clientName = form.name.trim();
 
     if (!clientName) {
@@ -88,10 +91,7 @@ function Clients() {
     }
 
     const { error } = await supabase.from("clients").insert([
-      {
-        ...form,
-        name: clientName,
-      },
+      { ...form, name: clientName },
     ]);
 
     if (error) {
@@ -100,16 +100,39 @@ function Clients() {
     }
 
     alert("تم حفظ الموكل بنجاح");
+    setForm({ name: "", phone: "", email: "", civil_id: "", address: "", notes: "" });
+    loadData();
+  }
 
-    setForm({
-      name: "",
-      phone: "",
-      email: "",
-      civil_id: "",
-      address: "",
+  async function addCase(e, client) {
+    e.preventDefault();
+
+    if (!caseForm.case_number.trim() && !caseForm.file_no.trim()) {
+      alert("اكتب رقم القضية أو رقم الملف على الأقل");
+      return;
+    }
+
+    const { error } = await supabase.from("cases").insert([
+      { ...caseForm, client_name: client.name },
+    ]);
+
+    if (error) {
+      alert("خطأ أثناء حفظ القضية: " + error.message);
+      return;
+    }
+
+    alert("تم إضافة القضية بنجاح ✅");
+    setCaseForm({
+      case_number: "",
+      file_no: "",
+      case_type: "",
+      court: "",
+      lawyer: "",
+      opponent_name: "",
+      status: "متداولة",
       notes: "",
     });
-
+    setShowAddCaseFor(null);
     loadData();
   }
 
@@ -119,17 +142,13 @@ function Clients() {
 
   function getClientCases(client) {
     const clientName = normalizeName(client.name);
-
     return cases.filter(
       (caseItem) => normalizeName(caseItem.client_name) === clientName
     );
   }
 
   function isActiveCase(caseItem) {
-    const status = `${caseItem.file_status || ""} ${
-      caseItem.status || ""
-    }`;
-
+    const status = `${caseItem.file_status || ""} ${caseItem.status || ""}`;
     return (
       status.includes("متداولة") ||
       status.includes("نشطة") ||
@@ -145,13 +164,9 @@ function Clients() {
     const caseIds = clientCases.map((caseItem) => Number(caseItem.id));
 
     return sessions.filter((session) => {
-      const matchesName =
-        normalizeName(session.client_name) === clientName;
-
+      const matchesName = normalizeName(session.client_name) === clientName;
       const matchesCase =
-        session.case_id &&
-        caseIds.includes(Number(session.case_id));
-
+        session.case_id && caseIds.includes(Number(session.case_id));
       return matchesName || matchesCase;
     });
   }
@@ -164,7 +179,6 @@ function Clients() {
       ${client.civil_id || ""}
       ${client.address || ""}
     `;
-
     return text.toLowerCase().includes(search.toLowerCase());
   });
 
@@ -178,12 +192,10 @@ function Clients() {
             <h3>{clients.length}</h3>
             <p>عدد الموكلين</p>
           </div>
-
           <div className="stat green">
             <h3>{cases.length}</h3>
             <p>عدد القضايا</p>
           </div>
-
           <div className="stat purple">
             <h3>{sessions.length}</h3>
             <p>الجلسات القادمة</p>
@@ -193,79 +205,52 @@ function Clients() {
 
       <section className="panel">
         <h2>إضافة موكل جديد</h2>
-
         <form className="form" onSubmit={addClient}>
           <input
             placeholder="اسم الموكل"
             value={form.name}
-            onChange={(e) =>
-              setForm({ ...form, name: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
-
           <input
             placeholder="رقم الهاتف"
             value={form.phone}
-            onChange={(e) =>
-              setForm({ ...form, phone: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
-
           <input
             type="email"
             placeholder="البريد الإلكتروني"
             value={form.email}
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
-
           <input
             placeholder="رقم الهوية"
             value={form.civil_id}
-            onChange={(e) =>
-              setForm({ ...form, civil_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, civil_id: e.target.value })}
           />
-
           <input
             placeholder="العنوان"
             value={form.address}
-            onChange={(e) =>
-              setForm({ ...form, address: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
           />
-
           <textarea
             placeholder="ملاحظات"
             value={form.notes}
-            onChange={(e) =>
-              setForm({ ...form, notes: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
           />
-
           <button type="submit">💾 حفظ الموكل</button>
         </form>
       </section>
 
       <section className="panel">
         <h2>قائمة الموكلين</h2>
-
         <input
           placeholder="🔍 ابحث بالاسم أو الهاتف أو البريد أو رقم الهوية..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            borderRadius: "8px",
-            border: "1px solid #ddd",
-          }}
+          style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #ddd" }}
         />
 
-        <p style={{ marginTop: "15px" }}>
-          عدد النتائج: {filteredClients.length}
-        </p>
+        <p style={{ marginTop: "15px" }}>عدد النتائج: {filteredClients.length}</p>
 
         {filteredClients.length === 0 ? (
           <p className="empty">لا يوجد موكلون.</p>
@@ -273,94 +258,149 @@ function Clients() {
           <div className="clients-grid">
             {filteredClients.map((client) => {
               const clientCases = getClientCases(client);
-
               const activeCases = clientCases.filter(isActiveCase);
-
-              const upcomingSessions =
-                getClientUpcomingSessions(client);
+              const upcomingSessions = getClientUpcomingSessions(client);
+              const isExpanded = expandedClientId === client.id;
+              const isAddingCase = showAddCaseFor === client.id;
 
               return (
                 <div key={client.id} className="case-card">
                   <h3>{client.name}</h3>
 
                   <div className="case-info">
-                    <p>
-                      <b>📱 الهاتف:</b>{" "}
-                      {client.phone || "لا يوجد"}
-                    </p>
-
-                    <p>
-                      <b>📧 البريد:</b>{" "}
-                      {client.email || "لا يوجد"}
-                    </p>
-
-                    <p>
-                      <b>🆔 رقم الهوية:</b>{" "}
-                      {client.civil_id || "لا يوجد"}
-                    </p>
-
-                    <p>
-                      <b>📍 العنوان:</b>{" "}
-                      {client.address || "لا يوجد"}
-                    </p>
-
-                    <p>
-                      <b>📁 عدد القضايا:</b>{" "}
-                      {clientCases.length}
-                    </p>
-
-                    <p>
-                      <b>⚖️ القضايا المتداولة:</b>{" "}
-                      {activeCases.length}
-                    </p>
-
-                    <p>
-                      <b>📅 الجلسات القادمة:</b>{" "}
-                      {upcomingSessions.length}
-                    </p>
-
-                    <p>
-                      <b>📝 الملاحظات:</b>{" "}
-                      {client.notes || "لا توجد ملاحظات"}
-                    </p>
+                    <p><b>📱 الهاتف:</b> {client.phone || "لا يوجد"}</p>
+                    <p><b>📧 البريد:</b> {client.email || "لا يوجد"}</p>
+                    <p><b>🆔 رقم الهوية:</b> {client.civil_id || "لا يوجد"}</p>
+                    <p><b>📍 العنوان:</b> {client.address || "لا يوجد"}</p>
+                    <p><b>📁 عدد القضايا:</b> {clientCases.length}</p>
+                    <p><b>⚖️ القضايا المتداولة:</b> {activeCases.length}</p>
+                    <p><b>📅 الجلسات القادمة:</b> {upcomingSessions.length}</p>
+                    <p><b>📝 الملاحظات:</b> {client.notes || "لا توجد ملاحظات"}</p>
                   </div>
 
                   {upcomingSessions.length > 0 && (
-                    <div
-                      style={{
-                        background: "#f0fff4",
-                        padding: "10px",
-                        borderRadius: "8px",
-                        marginTop: "10px",
-                      }}
-                    >
+                    <div style={{ background: "#f0fff4", padding: "10px", borderRadius: "8px", marginTop: "10px" }}>
                       <h4>📅 أقرب الجلسات</h4>
+                      {upcomingSessions.slice(0, 3).map((session) => (
+                        <div className="session" key={session.id}>
+                          <p><b>التاريخ:</b> {session.session_date}</p>
+                          <p><b>الوقت:</b> {session.session_time || "غير محدد"}</p>
+                          <p><b>المكان:</b> {session.location || "غير محدد"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-                      {upcomingSessions
-                        .slice(0, 3)
-                        .map((session) => (
-                          <div
-                            className="session"
-                            key={session.id}
+                  <button
+                    type="button"
+                    onClick={() => setExpandedClientId(isExpanded ? null : client.id)}
+                    style={{
+                      marginTop: "12px",
+                      background: "#7c1c1c",
+                      color: "white",
+                      border: "none",
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      width: "100%",
+                    }}
+                  >
+                    {isExpanded ? "🔼 إخفاء القضايا" : `📂 عرض القضايا (${clientCases.length})`}
+                  </button>
+
+                  {isExpanded && (
+                    <div style={{ marginTop: "12px", borderTop: "1px solid #eee", paddingTop: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                        <h4>قضايا {client.name}</h4>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCaseFor(isAddingCase ? null : client.id)}
+                          style={{
+                            background: "#22c55e",
+                            color: "white",
+                            border: "none",
+                            padding: "6px 12px",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            fontSize: "13px",
+                          }}
+                        >
+                          {isAddingCase ? "❌ إلغاء" : "➕ إضافة قضية"}
+                        </button>
+                      </div>
+
+                      {isAddingCase && (
+                        <form className="form" onSubmit={(e) => addCase(e, client)} style={{ marginBottom: "12px" }}>
+                          <input
+                            placeholder="رقم القضية"
+                            value={caseForm.case_number}
+                            onChange={(e) => setCaseForm({ ...caseForm, case_number: e.target.value })}
+                          />
+                          <input
+                            placeholder="رقم الملف"
+                            value={caseForm.file_no}
+                            onChange={(e) => setCaseForm({ ...caseForm, file_no: e.target.value })}
+                          />
+                          <input
+                            placeholder="نوع القضية"
+                            value={caseForm.case_type}
+                            onChange={(e) => setCaseForm({ ...caseForm, case_type: e.target.value })}
+                          />
+                          <input
+                            placeholder="المحكمة"
+                            value={caseForm.court}
+                            onChange={(e) => setCaseForm({ ...caseForm, court: e.target.value })}
+                          />
+                          <input
+                            placeholder="المسؤول"
+                            value={caseForm.lawyer}
+                            onChange={(e) => setCaseForm({ ...caseForm, lawyer: e.target.value })}
+                          />
+                          <input
+                            placeholder="الخصم"
+                            value={caseForm.opponent_name}
+                            onChange={(e) => setCaseForm({ ...caseForm, opponent_name: e.target.value })}
+                          />
+                          <select
+                            value={caseForm.status}
+                            onChange={(e) => setCaseForm({ ...caseForm, status: e.target.value })}
                           >
-                            <p>
-                              <b>التاريخ:</b>{" "}
-                              {session.session_date}
-                            </p>
+                            <option>متداولة</option>
+                            <option>منتهية</option>
+                            <option>التنفيذ</option>
+                            <option>الحفظ</option>
+                            <option>موقوفة</option>
+                            <option>مؤرشفة</option>
+                          </select>
+                          <textarea
+                            placeholder="ملاحظات"
+                            value={caseForm.notes}
+                            onChange={(e) => setCaseForm({ ...caseForm, notes: e.target.value })}
+                          />
+                          <button type="submit">💾 حفظ القضية</button>
+                        </form>
+                      )}
 
-                            <p>
-                              <b>الوقت:</b>{" "}
-                              {session.session_time ||
-                                "غير محدد"}
-                            </p>
-
-                            <p>
-                              <b>المكان:</b>{" "}
-                              {session.location ||
-                                "غير محدد"}
-                            </p>
+                      {clientCases.length === 0 ? (
+                        <p className="empty">لا توجد قضايا لهذا الموكل بعد.</p>
+                      ) : (
+                        clientCases.map((caseItem) => (
+                          <div
+                            key={caseItem.id}
+                            style={{
+                              background: "#f9f9f9",
+                              borderRadius: "8px",
+                              padding: "10px",
+                              marginBottom: "8px",
+                              borderRight: "3px solid #7c1c1c",
+                            }}
+                          >
+                            <p><b>رقم القضية:</b> {caseItem.case_number || caseItem.file_no || "بدون رقم"}</p>
+                            <p><b>النوع:</b> {caseItem.case_type || "غير محدد"}</p>
+                            <p><b>الحالة:</b> {caseItem.status || caseItem.file_status || "غير محددة"}</p>
                           </div>
-                        ))}
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
