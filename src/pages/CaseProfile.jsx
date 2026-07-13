@@ -49,8 +49,7 @@ function CaseProfile() {
     });
 
     const caseNumber = clean(caseData.case_number);
-    const parts = caseNumber.split("-");
-    const normalizedCaseNumber = parts.length === 2 ? `${parts[1]}-${parts[0]}` : caseNumber;
+    const normalizedCaseNumber = caseNumber;
 
     const { data: excelRows, error: excelError } = await supabase
       .from("excel_case_levels")
@@ -170,7 +169,6 @@ function CaseProfile() {
         .btn-cancel { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
       `}</style>
 
-      {/* Print Header */}
       <div className="print-header">
         <img src="/logo.png" alt="logo" />
         <div>
@@ -183,7 +181,6 @@ function CaseProfile() {
         <h1 style={{ textAlign: "center" }}>📂 ملف القضية</h1>
         <h2 style={{ textAlign: "center", color: "#7c1c1c" }}>{clientName}</h2>
 
-        {/* أزرار */}
         <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap", margin: "15px 0" }} className="no-print">
           <Link to="/cases"><button type="button">⬅️ رجوع</button></Link>
           {!editing && <button className="btn-edit" onClick={() => setEditing(true)}>✏️ تعديل</button>}
@@ -192,7 +189,6 @@ function CaseProfile() {
           <button type="button" onClick={() => window.print()}>🖨️ طباعة</button>
         </div>
 
-        {/* وضع العرض */}
         {!editing && (
           <div className="info-grid">
             <div className="info-item"><b>رقم النظام</b><span>{caseItem.id}</span></div>
@@ -218,7 +214,6 @@ function CaseProfile() {
           </div>
         )}
 
-        {/* وضع التعديل */}
         {editing && (
           <div className="edit-grid">
             <div className="edit-field">
@@ -268,7 +263,6 @@ function CaseProfile() {
         )}
       </section>
 
-      {/* الجلسات */}
       <section className="panel">
         <h2>📅 جلسات القضية ({sessions.length})</h2>
         {sessions.length === 0 ? (
