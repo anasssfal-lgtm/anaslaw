@@ -12,15 +12,27 @@ function Sessions() {
   const [sessionResult, setSessionResult] = useState("");
   const [savingResult, setSavingResult] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
+  function getKuwaitDate(daysToAdd = 0) {
+    const date = new Date();
+    date.setDate(date.getDate() + daysToAdd);
 
-  const tomorrowDate = new Date();
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const tomorrow = tomorrowDate.toISOString().split("T")[0];
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kuwait",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
 
-  const weekDate = new Date();
-  weekDate.setDate(weekDate.getDate() + 7);
-  const nextWeek = weekDate.toISOString().split("T")[0];
+    const year = parts.find((part) => part.type === "year")?.value;
+    const month = parts.find((part) => part.type === "month")?.value;
+    const day = parts.find((part) => part.type === "day")?.value;
+
+    return `${year}-${month}-${day}`;
+  }
+
+  const today = getKuwaitDate(0);
+  const tomorrow = getKuwaitDate(1);
+  const nextWeek = getKuwaitDate(7);
 
   useEffect(() => {
     setFromDate(today);
@@ -72,10 +84,12 @@ function Sessions() {
 
     setSavingResult(true);
 
+    const cleanResult = sessionResult.trim();
+
     const { error } = await supabase
       .from("sessions")
       .update({
-        session_result: sessionResult.trim(),
+        session_result: cleanResult,
       })
       .eq("id", selectedSession.id);
 
@@ -86,23 +100,23 @@ function Sessions() {
       return;
     }
 
-    alert("تم حفظ قرار الجلسة بنجاح ✅");
-
-    setSessions((current) =>
-      current.map((session) =>
+    setSessions((currentSessions) =>
+      currentSessions.map((session) =>
         session.id === selectedSession.id
           ? {
               ...session,
-              session_result: sessionResult.trim(),
+              session_result: cleanResult,
             }
           : session
       )
     );
 
-    setSelectedSession((current) => ({
-      ...current,
-      session_result: sessionResult.trim(),
+    setSelectedSession((currentSession) => ({
+      ...currentSession,
+      session_result: cleanResult,
     }));
+
+    alert("تم حفظ قرار الجلسة بنجاح ✅");
   }
 
   const filteredSessions = useMemo(() => {
@@ -172,6 +186,7 @@ function Sessions() {
       }
 
       groups[groupName].push(session);
+
       return groups;
     }, {});
   }, [filteredSessions, groupBy]);
@@ -222,6 +237,26 @@ function Sessions() {
     }
 
     return `⚖️ المحامي: ${groupName}`;
+  }
+
+  function showToday() {
+    setFromDate(today);
+    setToDate(today);
+  }
+
+  function showTomorrow() {
+    setFromDate(tomorrow);
+    setToDate(tomorrow);
+  }
+
+  function showWeek() {
+    setFromDate(today);
+    setToDate(nextWeek);
+  }
+
+  function showAll() {
+    setFromDate("");
+    setToDate("");
   }
 
   function printSessions() {
@@ -575,10 +610,7 @@ function Sessions() {
           <button
             type="button"
             className="filter-btn"
-            onClick={() => {
-              setFromDate(today);
-              setToDate(today);
-            }}
+            onClick={showToday}
           >
             📅 اليوم
           </button>
@@ -586,10 +618,7 @@ function Sessions() {
           <button
             type="button"
             className="filter-btn"
-            onClick={() => {
-              setFromDate(tomorrow);
-              setToDate(tomorrow);
-            }}
+            onClick={showTomorrow}
           >
             📅 الغد
           </button>
@@ -597,10 +626,7 @@ function Sessions() {
           <button
             type="button"
             className="filter-btn"
-            onClick={() => {
-              setFromDate(today);
-              setToDate(nextWeek);
-            }}
+            onClick={showWeek}
           >
             📅 الأسبوع
           </button>
@@ -608,10 +634,7 @@ function Sessions() {
           <button
             type="button"
             className="filter-btn"
-            onClick={() => {
-              setFromDate("");
-              setToDate("");
-            }}
+            onClick={showAll}
           >
             🔄 الكل
           </button>
@@ -735,9 +758,7 @@ function Sessions() {
                           title="اضغط لفتح تفاصيل الجلسة"
                         >
                           <td>{index + 1}</td>
-
                           <td>{item.session_date || "—"}</td>
-
                           <td>{item.session_time || "—"}</td>
 
                           <td style={{ fontWeight: "bold" }}>
