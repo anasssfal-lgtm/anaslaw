@@ -86,34 +86,47 @@ function Sessions() {
   async function getSessions() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("sessions")
-      .select(`
-        *,
-        cases(
-          id,
-          client_name,
-          case_number,
-          case_type,
-          court,
-          lawyer,
-          opponent_name,
-          file_no,
-          notes,
-          status,
-          verdict
-        )
-      `)
-      .order("session_date", { ascending: true });
+    const pageSize = 1000;
+    const allRows = [];
+    let from = 0;
 
-    setLoading(false);
+    while (true) {
+      const { data, error } = await supabase
+        .from("sessions")
+        .select(`
+          *,
+          cases(
+            id,
+            client_name,
+            case_number,
+            case_type,
+            court,
+            lawyer,
+            opponent_name,
+            file_no,
+            notes,
+            status,
+            verdict
+          )
+        `)
+        .order("session_date", { ascending: true })
+        .range(from, from + pageSize - 1);
 
-    if (error) {
-      alert("خطأ في جلب الجلسات: " + error.message);
-      return;
+      if (error) {
+        setLoading(false);
+        alert("خطأ في جلب الجلسات: " + error.message);
+        return;
+      }
+
+      allRows.push(...(data || []));
+
+      if (!data || data.length < pageSize) break;
+
+      from += pageSize;
     }
 
-    setSessions(data || []);
+    setLoading(false);
+    setSessions(allRows);
   }
 
   function openSession(item) {
