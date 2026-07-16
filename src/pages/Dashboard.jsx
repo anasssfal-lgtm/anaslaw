@@ -46,13 +46,6 @@ function Dashboard() {
     return `${days[d.getDay()]} ${dateStr}`;
   }
 
-  const grouped = sessions.reduce((acc, s) => {
-    if (s.session_date > nextWeek) return acc;
-    if (!acc[s.session_date]) acc[s.session_date] = [];
-    acc[s.session_date].push(s);
-    return acc;
-  }, {});
-
   return (
     <div>
       <style>{`
@@ -93,33 +86,6 @@ function Dashboard() {
         .quick-btn:hover { border-color: #7c1c1c; background: #fff8f8; }
         .quick-btn span { font-size: 26px; margin-bottom: 6px; }
         .quick-btn p { font-size: 13px; font-weight: bold; margin: 0; color: #333; }
-        .date-group-header {
-          background: #7c1c1c;
-          color: white;
-          padding: 10px 15px;
-          font-weight: bold;
-          font-size: 14px;
-          margin-top: 15px;
-          border-radius: 8px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .today-badge { background: #22c55e; color: white; padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 8px; }
-        .tomorrow-badge { background: #f59e0b; color: white; padding: 2px 10px; border-radius: 10px; font-size: 12px; margin-right: 8px; }
-        .session-row {
-          display: grid;
-          grid-template-columns: 25px 80px 1fr 100px 120px 90px;
-          gap: 8px;
-          padding: 10px 8px;
-          border-bottom: 1px solid #f0f0f0;
-          align-items: center;
-        }
-        .session-row:hover { background: #fafafa; }
-        .session-time { background: #7c1c1c; color: white; padding: 4px 6px; border-radius: 6px; font-size: 11px; text-align: center; }
-        .session-client { font-weight: bold; font-size: 13px; }
-        .session-detail { color: #666; font-size: 12px; }
-        .session-lawyer { background: #f0f0ff; color: #334; padding: 2px 6px; border-radius: 6px; font-size: 11px; text-align: center; }
         .stat { cursor: pointer; transition: transform 0.15s; }
         .stat:hover { transform: scale(1.04); }
       `}</style>
@@ -129,7 +95,7 @@ function Dashboard() {
         <img src="/logo.png" alt="logo" />
         <div>
           <h2>مكتب أنس الحيدر للمحاماة والاستشارات القانونية</h2>
-          <p>رول جلسات الأسبوع — من {today} إلى {nextWeek}</p>
+          <p>لوحة التحكم — {formatDate(today)}</p>
         </div>
       </div>
 
@@ -177,45 +143,6 @@ function Dashboard() {
         </div>
       </section>
 
-      {/* جلسات الأسبوع */}
-      <section className="panel">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }} className="no-print">
-          <h2>📅 جلسات الأسبوع</h2>
-          <button onClick={() => window.print()} style={{ background: "#1d4ed8", color: "white", border: "none", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" }}>
-            🖨️ طباعة / PDF
-          </button>
-        </div>
-
-        {Object.keys(grouped).sort().map((date) => (
-          <div key={date}>
-            <div className="date-group-header">
-              <span>
-                {formatDate(date)}
-                {date === today && <span className="today-badge">اليوم</span>}
-                {date === tomorrow && <span className="tomorrow-badge">الغد</span>}
-              </span>
-              <span>{grouped[date].length} جلسة</span>
-            </div>
-
-            {grouped[date].map((s, i) => (
-              <div className="session-row" key={s.id}>
-                <span style={{ color: "#bbb", fontSize: "12px" }}>{i + 1}</span>
-                <span className="session-time">{s.session_time || "--:--"}</span>
-                <span className="session-client">{s.cases?.client_name || s.client_name || "—"}</span>
-                <span className="session-detail">{s.cases?.case_number || "—"}</span>
-                <span className="session-detail">{s.cases?.court || s.location || "—"}</span>
-                <span className="session-lawyer">{s.lawyer || s.cases?.lawyer || "—"}</span>
-              </div>
-            ))}
-          </div>
-        ))}
-
-        {Object.keys(grouped).length === 0 && (
-          <p style={{ textAlign: "center", color: "#999", padding: "30px" }}>
-            لا توجد جلسات هذا الأسبوع
-          </p>
-        )}
-      </section>
     </div>
   );
 }

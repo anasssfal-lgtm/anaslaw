@@ -350,17 +350,28 @@ function Sessions() {
         }
 
         .group-header {
-          background: #7c1c1c;
-          color: white;
-          padding: 10px 15px;
+          background: #e9e9e9;
+          color: #7c1c1c;
+          padding: 9px 15px;
           font-weight: bold;
-          font-size: 15px;
+          font-size: 14px;
           margin-top: 18px;
           border-radius: 8px 8px 0 0;
+          border: 1px solid #dddddd;
+          border-bottom: none;
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
           gap: 10px;
+          position: relative;
+        }
+
+        .group-count {
+          position: absolute;
+          left: 15px;
+          font-weight: normal;
+          font-size: 12px;
+          color: #777777;
         }
 
         .today-badge {
@@ -379,11 +390,13 @@ function Sessions() {
         }
 
         .sessions-table th {
-          background: #f5f5f5;
+          background: #7c1c1c;
+          color: white;
           padding: 10px;
           text-align: center;
-          border: 1px solid #ddd;
+          border: 1px solid #6b1818;
           white-space: nowrap;
+          font-size: 13px;
         }
 
         .sessions-table td {
@@ -397,8 +410,39 @@ function Sessions() {
           cursor: pointer;
         }
 
+        .sessions-table tbody tr:nth-child(even) {
+          background: #f7f7f7;
+        }
+
         .sessions-table tbody tr:hover {
-          background: #fff7f7;
+          background: #fbe9e9;
+        }
+
+        .parties-cell {
+          text-align: right;
+          max-width: 220px;
+        }
+
+        .parties-cell .party-plaintiff {
+          font-weight: bold;
+        }
+
+        .parties-cell .party-defendant {
+          color: #666666;
+          font-size: 12px;
+          margin-top: 2px;
+        }
+
+        .parties-cell .party-label {
+          font-weight: normal;
+          color: #999999;
+          font-size: 11px;
+        }
+
+        .result-cell {
+          max-width: 220px;
+          white-space: normal;
+          line-height: 1.5;
         }
 
         .table-box {
@@ -677,7 +721,9 @@ function Sessions() {
                     )}
                   </span>
 
-                  <span>{groupedSessions[groupName].length} جلسة</span>
+                  <span className="group-count">
+                    {groupedSessions[groupName].length} جلسة
+                  </span>
                 </div>
 
                 <div className="table-box">
@@ -685,15 +731,15 @@ function Sessions() {
                     <thead>
                       <tr>
                         <th>#</th>
+                        <th>الأطراف</th>
+                        <th>المحكمة</th>
+                        <th>رقم القضية</th>
+                        <th>المسؤول</th>
+                        <th>نوع الجلسة</th>
                         <th>التاريخ</th>
                         <th>الوقت</th>
-                        <th>الموكل</th>
-                        <th>رقم القضية</th>
-                        <th>المحكمة</th>
-                        <th>نوع الجلسة</th>
-                        <th>المسؤول</th>
-                        <th>رقم الملف</th>
                         <th>قرار الجلسة</th>
+                        <th>رقم الملف</th>
                       </tr>
                     </thead>
 
@@ -704,31 +750,36 @@ function Sessions() {
                           onClick={() => openSession(item)}
                         >
                           <td>{index + 1}</td>
-                          <td>{normalizeDate(item.session_date) || "—"}</td>
-                          <td>{item.session_time || "—"}</td>
-                          <td>
-                            {item.cases?.client_name ||
-                              item.client_name ||
-                              "—"}
+                          <td className="parties-cell">
+                            <div className="party-plaintiff">
+                              {item.cases?.client_name ||
+                                item.client_name ||
+                                "—"}{" "}
+                              <span className="party-label">(مدعي)</span>
+                            </div>
+
+                            {(item.cases?.opponent_name || item.opponent) && (
+                              <div className="party-defendant">
+                                {item.cases?.opponent_name || item.opponent}{" "}
+                                <span className="party-label">(مدعى عليه)</span>
+                              </div>
+                            )}
                           </td>
-                          <td>{item.cases?.case_number || "—"}</td>
                           <td>
                             {item.cases?.court ||
                               item.location ||
                               "—"}
                           </td>
-                          <td>{item.hearing_type || "—"}</td>
+                          <td>{item.cases?.case_number || "—"}</td>
                           <td>
                             {item.lawyer ||
                               item.cases?.lawyer ||
                               "—"}
                           </td>
-                          <td>
-                            {item.cases?.file_no ||
-                              item.file_no ||
-                              "—"}
-                          </td>
-                          <td>
+                          <td>{item.hearing_type || "—"}</td>
+                          <td>{normalizeDate(item.session_date) || "—"}</td>
+                          <td>{item.session_time || "—"}</td>
+                          <td className="result-cell">
                             {item.session_result ? (
                               <span className="result-ready">
                                 {item.session_result}
@@ -738,6 +789,11 @@ function Sessions() {
                                 اضغط لإضافة القرار
                               </span>
                             )}
+                          </td>
+                          <td>
+                            {item.cases?.file_no ||
+                              item.file_no ||
+                              "—"}
                           </td>
                         </tr>
                       ))}
