@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabase";
 
 function Cases() {
   const [cases, setCases] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [excelLevels, setExcelLevels] = useState([]);
   const [sessionForm, setSessionForm] = useState({});
   const [caseSearch, setCaseSearch] = useState("");
   const [view, setView] = useState("متداولة");
@@ -26,6 +27,7 @@ function Cases() {
   useEffect(() => {
     getCases();
     getSessions();
+    getExcelLevels();
   }, []);
 
   async function getCases() {
@@ -111,6 +113,34 @@ function Cases() {
     getSessions();
   }
 
+  async function getExcelLevels() {
+    const { data, error } = await supabase
+      .from("excel_case_levels")
+      .select("CourtCaseNo, Chamber, Floor, JuryNo, ClientStatus, OpponentStatus, CaseStartDate, CaseEndDate");
+    if (error) return;
+    setExcelLevels(data || []);
+  }
+
+  function normalizeCaseNo(value) {
+    return value ? String(value).trim() : "";
+  }
+
+  const excelLevelsByCaseNo = useMemo(() => {
+    const map = new Map();
+    excelLevels.forEach((row) => {
+      const key = normalizeCaseNo(row.CourtCaseNo);
+      if (key) map.set(key, row);
+    });
+    return map;
+  }, [excelLevels]);
+
+  function hasMissingExcelData(item) {
+    const row = excelLevelsByCaseNo.get(normalizeCaseNo(item.case_number));
+    if (!row) return true;
+    const fields = [row.Chamber, row.Floor, row.JuryNo, row.ClientStatus, row.OpponentStatus, row.CaseStartDate, row.CaseEndDate];
+    return fields.every((v) => v === null || v === undefined || String(v).trim() === "");
+  }
+
   function getCaseSessions(caseItem) {
     return sessions.filter(
       (s) =>
@@ -170,6 +200,18 @@ function Cases() {
         }
         .case-info-item { font-size: 13px; color: #555; }
         .case-info-item b { color: #333; display: block; font-size: 11px; }
+        .missing-data-badge {
+          display: inline-block;
+          margin-inline-start: 6px;
+          background: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fde68a;
+          font-size: 10px;
+          font-weight: bold;
+          padding: 1px 7px;
+          border-radius: 8px;
+          vertical-align: middle;
+        }
         .upcoming-box {
           background: #f0fff4;
           border-radius: 8px;
@@ -278,7 +320,13 @@ function Cases() {
 
               <div className="case-card-body">
                 <div className="case-info-grid">
-                  <div className="case-info-item"><b>رقم القضية</b>{item.case_number || "—"}</div>
+                  <div className="case-info-item">
+                    <b>رقم القضية</b>
+                    {item.case_number || "—"}
+                    {hasMissingExcelData(item) && (
+                      <span className="missing-data-badge">بيانات ناقصة</span>
+                    )}
+                  </div>
                   <div className="case-info-item"><b>رقم الملف</b>{item.file_no || "—"}</div>
                   <div className="case-info-item"><b>نوع القضية</b>{item.case_type || "—"}</div>
                   <div className="case-info-item"><b>المحكمة</b>{item.court || "—"}</div>
