@@ -141,6 +141,12 @@ function Cases() {
     return fields.every((v) => v === null || v === undefined || String(v).trim() === "");
   }
 
+  function hasMissingElectronicNo(item) {
+    const row = excelLevelsByCaseNo.get(normalizeCaseNo(item.case_number));
+    const value = row?.ElectronicNo;
+    return value === null || value === undefined || String(value).trim() === "";
+  }
+
   function getCaseSessions(caseItem) {
     return sessions.filter(
       (s) =>
@@ -211,6 +217,11 @@ function Cases() {
           padding: 1px 7px;
           border-radius: 8px;
           vertical-align: middle;
+        }
+        .electronic-no-badge {
+          background: #fee2e2;
+          color: #991b1b;
+          border-color: #fecaca;
         }
         .upcoming-box {
           background: #f0fff4;
@@ -325,6 +336,9 @@ function Cases() {
                     {item.case_number || "—"}
                     {hasMissingExcelData(item) && (
                       <span className="missing-data-badge">بيانات ناقصة</span>
+                    )}
+                    {hasMissingElectronicNo(item) && (
+                      <span className="missing-data-badge electronic-no-badge">بدون رقم إلكتروني</span>
                     )}
                   </div>
                   <div className="case-info-item"><b>رقم الملف</b>{item.file_no || "—"}</div>
