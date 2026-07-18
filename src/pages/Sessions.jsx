@@ -13,6 +13,8 @@ function Sessions() {
   const [sessionResult, setSessionResult] = useState("");
   const [savingResult, setSavingResult] = useState(false);
 
+  const [printMode, setPrintMode] = useState(false);
+
   function getKuwaitDate(daysToAdd = 0) {
     const now = new Date();
 
@@ -351,33 +353,32 @@ function Sessions() {
   }
 
   function printSessions() {
-    window.print();
+    setPrintMode(true);
+    document.body.classList.add("print-mode");
+
+    let fallbackTimer;
+
+    const exitPrintMode = () => {
+      setPrintMode(false);
+      document.body.classList.remove("print-mode");
+      window.removeEventListener("afterprint", exitPrintMode);
+      clearTimeout(fallbackTimer);
+    };
+
+    fallbackTimer = setTimeout(exitPrintMode, 10000);
+    window.addEventListener("afterprint", exitPrintMode);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
   }
 
   return (
     <div>
       <style>{`
         @media print {
-          nav,
-          .no-print,
-          .screen-roll,
-          .session-modal-overlay {
-            display: none !important;
-          }
-
-          .panel {
-            box-shadow: none !important;
-            padding: 0 !important;
-          }
-
-          .print-header {
-            display: block !important;
-          }
-
-          .print-roll {
-            display: block !important;
-          }
-
           .print-day-block {
             break-inside: avoid;
           }
@@ -385,14 +386,6 @@ function Sessions() {
           .print-case-block {
             break-inside: avoid;
           }
-        }
-
-        .print-header {
-          display: none;
-        }
-
-        .print-roll {
-          display: none;
         }
 
         .print-letterhead {
@@ -730,25 +723,83 @@ function Sessions() {
         }
       `}</style>
 
-      <div className="print-header">
-        <div className="print-letterhead">
-          <div className="firm-name">
-            <h2>مكتب أنس الحيدر</h2>
-            <p>للمحاماة والاستشارات القانونية</p>
+      {printMode && (
+        <div className="print-header">
+          <div className="print-letterhead">
+            <div className="firm-name">
+              <h2>مكتب أنس الحيدر</h2>
+              <p>للمحاماة والاستشارات القانونية</p>
+            </div>
+            <img src="/logo.png" alt="logo" />
           </div>
-          <img src="/logo.png" alt="logo" />
-        </div>
 
-        <div className="print-info-bar">
-          <span>العدد: {filteredSessions.length}</span>
-          <span>📅 رول الجلسات</span>
-          <span>
-            من {fromDate || "بداية"} إلى {toDate || "نهاية"}
-          </span>
-        </div>
-      </div>
+          <div className="print-info-bar">
+            <span>العدد: {filteredSessions.length}</span>
+            <span>📅 رول الجلسات</span>
+            <span>
+              من {fromDate || "بداية"} إلى {toDate || "نهاية"}
+            </span>
+          </div>
 
-      <section className="panel no-print">
+          <div className="print-roll">
+            {printDayGroups.map(({ dateKey, items }) => (
+              <div className="print-day-block" key={dateKey}>
+                <div className="print-day-header">{formatDate(dateKey)}</div>
+
+                {items.map((item, index) => {
+                  const previous = getPreviousSession(item);
+
+                  return (
+                    <div className="print-case-block" key={item.id}>
+                      <div className="print-case-row">
+                        <span>
+                          {index + 1}. الخصم: {item.cases?.opponent_name || item.opponent || "—"} (مدعى عليه)
+                        </span>
+                        <span>{item.cases?.court || item.location || "—"}</span>
+                        <span>{item.cases?.case_type || "—"}</span>
+                      </div>
+
+                      <div className="print-case-row-main">
+                        <span>{item.cases?.case_number || "—"}</span>
+                        <span>{item.lawyer || item.cases?.lawyer || "—"}</span>
+                        <span>{item.hearing_type || "جلسة محكمة"}</span>
+                        <span className="print-case-date">
+                          {normalizeDate(item.session_date) || "—"} {item.session_time || ""}
+                        </span>
+                        <span className="print-case-result">
+                          {item.session_result || "لم تحدد النتيجة"}
+                        </span>
+                        <span className="print-case-file">
+                          ملف: {item.cases?.file_no || item.file_no || "—"}
+                        </span>
+                      </div>
+
+                      <div className="print-case-row">
+                        <span>
+                          الموكل: {item.cases?.client_name || item.client_name || "—"} (مدعي)
+                        </span>
+                        <span>
+                          {previous
+                            ? `آخر جلسة سابقة: ${normalizeDate(previous.session_date)} ${previous.session_time || ""} — ${previous.session_result || "بدون قرار مسجل"}`
+                            : "لا توجد جلسة سابقة مسجلة"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            {printDayGroups.length === 0 && (
+              <p style={{ textAlign: "center", padding: "20px" }}>لا توجد جلسات في هذه الفترة</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!printMode && (
+      <>
+      <section className="panel">
         <h1 style={{ textAlign: "center" }}>📅 رول الجلسات</h1>
 
         <div className="dashboard">
@@ -774,7 +825,7 @@ function Sessions() {
         </div>
       </section>
 
-      <section className="panel no-print">
+      <section className="panel">
         <h2>طريقة عرض الرول</h2>
 
         <div className="filter-btns">
@@ -965,58 +1016,6 @@ function Sessions() {
           </div>
         )}
 
-        {!loading && (
-          <div className="print-roll">
-            {printDayGroups.map(({ dateKey, items }) => (
-              <div className="print-day-block" key={dateKey}>
-                <div className="print-day-header">{formatDate(dateKey)}</div>
-
-                {items.map((item, index) => {
-                  const previous = getPreviousSession(item);
-
-                  return (
-                    <div className="print-case-block" key={item.id}>
-                      <div className="print-case-row">
-                        <span>
-                          {index + 1}. الخصم: {item.cases?.opponent_name || item.opponent || "—"} (مدعى عليه)
-                        </span>
-                        <span>{item.cases?.court || item.location || "—"}</span>
-                        <span>{item.cases?.case_type || "—"}</span>
-                      </div>
-
-                      <div className="print-case-row-main">
-                        <span>{item.cases?.case_number || "—"}</span>
-                        <span>{item.lawyer || item.cases?.lawyer || "—"}</span>
-                        <span>{item.hearing_type || "جلسة محكمة"}</span>
-                        <span className="print-case-date">
-                          {normalizeDate(item.session_date) || "—"} {item.session_time || ""}
-                        </span>
-                        <span className="print-case-result">
-                          {item.session_result || "لم تحدد النتيجة"}
-                        </span>
-                        <span className="print-case-file">
-                          ملف: {item.cases?.file_no || item.file_no || "—"}
-                        </span>
-                      </div>
-
-                      <div className="print-case-row">
-                        <span>
-                          الموكل: {item.cases?.client_name || item.client_name || "—"} (مدعي)
-                        </span>
-                        <span>
-                          {previous
-                            ? `آخر جلسة سابقة: ${normalizeDate(previous.session_date)} ${previous.session_time || ""} — ${previous.session_result || "بدون قرار مسجل"}`
-                            : "لا توجد جلسة سابقة مسجلة"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        )}
-
         {!loading && filteredSessions.length === 0 && (
           <p style={{ textAlign: "center", padding: "30px" }}>
             لا توجد جلسات في هذه الفترة
@@ -1132,6 +1131,8 @@ function Sessions() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );
