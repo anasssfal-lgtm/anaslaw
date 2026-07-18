@@ -11,8 +11,17 @@ function CaseProfile() {
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
 
+  const [notices, setNotices] = useState([]);
+  const [showNoticeForm, setShowNoticeForm] = useState(false);
+  const [noticeForm, setNoticeForm] = useState({});
+  const [savingNotice, setSavingNotice] = useState(false);
+
+  const [profilePrintMode, setProfilePrintMode] = useState(false);
+  const [noticeToPrint, setNoticeToPrint] = useState(null);
+
   useEffect(() => {
     loadCase();
+    loadNotices();
   }, [id]);
 
   function clean(value) {
@@ -123,6 +132,21 @@ function CaseProfile() {
     setSessions(sessionsData || []);
   }
 
+  async function loadNotices() {
+    const { data, error } = await supabase
+      .from("notices")
+      .select("*")
+      .eq("case_id", id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.log("NOTICES ERROR:", error);
+      return;
+    }
+
+    setNotices(data || []);
+  }
+
   async function saveEdit() {
     const updateData = {
       client_name: editForm.client_name?.trim() || "",
@@ -168,6 +192,104 @@ function CaseProfile() {
     });
 
     setEditing(false);
+  }
+
+  function openNoticeForm() {
+    const todayStr = new Date().toISOString().split("T")[0];
+
+    setNoticeForm({
+      recipient_name: clean(caseItem?.opponent_name) || "",
+      notice_date: todayStr,
+      plaintiff_name: clean(caseItem?.client_name) || "",
+      defendant_name: clean(caseItem?.opponent_name) || "",
+      case_subject: clean(caseItem?.case_type) || "",
+      verdict_date: todayStr,
+      verdict_text: clean(caseItem?.verdict) || "",
+      reference_no: "",
+      additional_notes: "",
+    });
+
+    setShowNoticeForm(true);
+  }
+
+  function cancelNoticeForm() {
+    setShowNoticeForm(false);
+  }
+
+  async function saveNotice() {
+    if (!noticeForm.recipient_name?.trim()) {
+      alert("اكتب اسم المرسل إليه (السادة)");
+      return;
+    }
+
+    setSavingNotice(true);
+
+    const { data, error } = await supabase
+      .from("notices")
+      .insert([
+        {
+          case_id: id,
+          recipient_name: noticeForm.recipient_name?.trim() || "",
+          notice_date: noticeForm.notice_date || null,
+          plaintiff_name: noticeForm.plaintiff_name?.trim() || "",
+          defendant_name: noticeForm.defendant_name?.trim() || "",
+          case_subject: noticeForm.case_subject?.trim() || "",
+          verdict_date: noticeForm.verdict_date || null,
+          verdict_text: noticeForm.verdict_text?.trim() || "",
+          reference_no: noticeForm.reference_no?.trim() || "",
+          additional_notes: noticeForm.additional_notes?.trim() || "",
+        },
+      ])
+      .select()
+      .single();
+
+    setSavingNotice(false);
+
+    if (error) {
+      alert("خطأ أثناء حفظ الإخطار: " + error.message);
+      return;
+    }
+
+    setShowNoticeForm(false);
+    await loadNotices();
+    printNotice(data);
+  }
+
+  function runPrintFlow(onEnter, onExit) {
+    document.body.classList.add("print-mode");
+
+    let fallbackTimer;
+
+    const exitPrint = () => {
+      onExit();
+      document.body.classList.remove("print-mode");
+      window.removeEventListener("afterprint", exitPrint);
+      clearTimeout(fallbackTimer);
+    };
+
+    onEnter();
+    fallbackTimer = setTimeout(exitPrint, 10000);
+    window.addEventListener("afterprint", exitPrint);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        window.print();
+      });
+    });
+  }
+
+  function printProfile() {
+    runPrintFlow(
+      () => setProfilePrintMode(true),
+      () => setProfilePrintMode(false)
+    );
+  }
+
+  function printNotice(notice) {
+    runPrintFlow(
+      () => setNoticeToPrint(notice),
+      () => setNoticeToPrint(null)
+    );
   }
 
   if (!caseItem) {
@@ -225,34 +347,108 @@ function CaseProfile() {
     <div>
       <style>{`
         @media print {
-          nav,
-          .no-print {
-            display: none !important;
-          }
-
-          .print-header {
-            display: flex !important;
+          .notice-card,
+          .print-letterhead {
+            break-inside: avoid;
           }
         }
 
-        .print-header {
-          display: none;
+        .print-letterhead {
+          display: flex;
+          justify-content: space-between;
           align-items: center;
-          gap: 15px;
-          padding: 15px 0;
-          border-bottom: 2px solid #8b6914;
-          margin-bottom: 20px;
+          border-bottom: 3px solid #7c1c1c;
+          padding-bottom: 12px;
+          margin-bottom: 18px;
         }
 
-        .print-header img {
-          width: 50px;
-          height: 50px;
+        .print-letterhead img {
+          height: 55px;
           object-fit: contain;
         }
 
-        .print-header h2 {
+        .print-letterhead .firm-name {
+          text-align: right;
+        }
+
+        .print-letterhead .firm-name h2 {
           margin: 0;
-          color: #8b6914;
+          color: #7c1c1c;
+          font-size: 18px;
+        }
+
+        .print-letterhead .firm-name p {
+          margin: 2px 0 0 0;
+          color: #666;
+          font-size: 11px;
+        }
+
+        .notice-card {
+          border: 2px solid #7c1c1c;
+          border-radius: 12px;
+          padding: 10px 20px;
+        }
+
+        .notice-title {
+          color: #7c1c1c;
+          font-weight: bold;
+          font-size: 17px;
+          text-align: center;
+          margin-bottom: 10px;
+        }
+
+        .notice-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 15px;
+          padding: 10px 0;
+          border-bottom: 1px dashed #ddd;
+        }
+
+        .notice-row:last-child {
+          border-bottom: none;
+        }
+
+        .notice-label {
+          background: #f3f3f3;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          padding: 6px 14px;
+          font-weight: bold;
+          color: #7c1c1c;
+          font-size: 13px;
+          white-space: nowrap;
+        }
+
+        .notice-value {
+          flex: 1;
+          text-align: right;
+          font-size: 14px;
+          color: #222;
+        }
+
+        .notice-history-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          background: #f9f9f9;
+          border-radius: 8px;
+          padding: 10px 14px;
+          margin-bottom: 8px;
+          border-right: 3px solid #7c1c1c;
+          flex-wrap: wrap;
+        }
+
+        .notice-history-item .btn-print-notice {
+          background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 6px 14px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 12px;
         }
 
         .info-grid {
@@ -351,6 +547,15 @@ function CaseProfile() {
           cursor: pointer;
         }
 
+        .btn-notice {
+          background: #7c1c1c;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
         .btn-save {
           background: #22c55e;
           color: white;
@@ -379,83 +584,32 @@ function CaseProfile() {
           .full-width {
             grid-column: span 1 !important;
           }
+
+          .notice-row {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .notice-value {
+            text-align: right;
+          }
         }
       `}</style>
 
-      <div className="print-header">
-        <img src="/logo.png" alt="logo" />
-
+      {profilePrintMode && (
         <div>
-          <h2>مكتب أنس الحيدر للمحاماة</h2>
-          <p>ملف القضية — {clientName}</p>
-        </div>
-      </div>
+          <div className="print-letterhead">
+            <div className="firm-name">
+              <h2>مكتب أنس الحيدر</h2>
+              <p>للمحاماة والاستشارات القانونية</p>
+            </div>
+            <img src="/logo.png" alt="logo" />
+          </div>
 
-      <section className="panel">
-        <h1 style={{ textAlign: "center" }}>📂 ملف القضية</h1>
+          <h2 style={{ textAlign: "center", color: "#7c1c1c" }}>
+            {clientName}
+          </h2>
 
-        <h2
-          style={{
-            textAlign: "center",
-            color: "#7c1c1c",
-          }}
-        >
-          {clientName}
-        </h2>
-
-        <div
-          className="no-print"
-          style={{
-            display: "flex",
-            gap: "10px",
-            justifyContent: "center",
-            flexWrap: "wrap",
-            margin: "15px 0",
-          }}
-        >
-          <Link to="/cases">
-            <button type="button">⬅️ رجوع</button>
-          </Link>
-
-          {!editing && (
-            <button
-              type="button"
-              className="btn-edit"
-              onClick={() => setEditing(true)}
-            >
-              ✏️ تعديل وإضافة حكم
-            </button>
-          )}
-
-          {editing && (
-            <button
-              type="button"
-              className="btn-save"
-              onClick={saveEdit}
-            >
-              💾 حفظ
-            </button>
-          )}
-
-          {editing && (
-            <button
-              type="button"
-              className="btn-cancel"
-              onClick={cancelEdit}
-            >
-              ❌ إلغاء
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => window.print()}
-          >
-            🖨️ طباعة
-          </button>
-        </div>
-
-        {!editing && (
           <div className="info-grid">
             <div className="info-item">
               <b>رقم القضية</b>
@@ -478,66 +632,8 @@ function CaseProfile() {
             </div>
 
             <div className="info-item">
-              <b>رقم القاعة</b>
-              <span>{clean(excelCase?.Chamber) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>الدور</b>
-              <span>{clean(excelCase?.Floor) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>الرقم الإلكتروني</b>
-              <span>{clean(excelCase?.ElectronicNo) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>رقم الهيئة</b>
-              <span>{clean(excelCase?.JuryNo) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>بداية القضية</b>
-              <span>{clean(excelCase?.CaseStartDate) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>نهاية القضية</b>
-              <span>{clean(excelCase?.CaseEndDate) || "—"}</span>
-            </div>
-
-            <div className="info-item">
               <b>الحالة</b>
               <span>{status}</span>
-            </div>
-
-            <div className="info-item">
-              <b>صفة الموكل</b>
-              <span>{clean(excelCase?.ClientStatus) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>صفة الخصم</b>
-              <span>{clean(excelCase?.OpponentStatus) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>تاريخ الحكم القديم</b>
-              <span>{clean(excelCase?.VerdictDate) || "—"}</span>
-            </div>
-
-            <div className="info-item">
-              <b>نتيجة الحكم القديمة</b>
-              <span>{clean(excelCase?.VerdictResult) || "—"}</span>
-            </div>
-
-            <div
-              className="info-item verdict-item full-width"
-              style={{ gridColumn: "span 3" }}
-            >
-              <b>⚖️ الحكم</b>
-              <span>{verdict}</span>
             </div>
 
             <div className="info-item">
@@ -551,6 +647,14 @@ function CaseProfile() {
             </div>
 
             <div
+              className="info-item verdict-item full-width"
+              style={{ gridColumn: "span 3" }}
+            >
+              <b>⚖️ الحكم</b>
+              <span>{verdict}</span>
+            </div>
+
+            <div
               className="info-item full-width"
               style={{ gridColumn: "span 3" }}
             >
@@ -558,218 +662,647 @@ function CaseProfile() {
               <span>{clean(caseItem.notes) || "لا توجد"}</span>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {editing && (
-          <div className="edit-grid">
-            <div className="edit-field">
-              <label>اسم الموكل</label>
-              <input
-                value={editForm.client_name || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    client_name: e.target.value,
-                  })
-                }
-              />
+      {noticeToPrint && (
+        <div>
+          <div className="print-letterhead">
+            <div className="firm-name">
+              <h2>مكتب أنس الحيدر</h2>
+              <p>للمحاماة والاستشارات القانونية</p>
             </div>
-
-            <div className="edit-field">
-              <label>رقم القضية</label>
-              <input
-                value={editForm.case_number || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    case_number: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="edit-field">
-              <label>رقم الملف</label>
-              <input
-                value={editForm.file_no || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    file_no: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="edit-field">
-              <label>نوع القضية</label>
-              <input
-                value={editForm.case_type || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    case_type: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="edit-field">
-              <label>المحكمة</label>
-              <input
-                value={editForm.court || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    court: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="edit-field">
-              <label>المسؤول</label>
-              <input
-                value={editForm.lawyer || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    lawyer: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="edit-field">
-              <label>الخصم</label>
-              <input
-                value={editForm.opponent_name || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    opponent_name: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div className="edit-field">
-              <label>الحالة</label>
-              <select
-                value={editForm.status || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    status: e.target.value,
-                  })
-                }
-              >
-                <option value="">اختر الحالة</option>
-                <option value="متداولة">متداولة</option>
-                <option value="منتهية">منتهية</option>
-                <option value="التنفيذ">التنفيذ</option>
-                <option value="الحفظ">الحفظ</option>
-                <option value="موقوفة">موقوفة</option>
-                <option value="مؤرشفة">مؤرشفة</option>
-              </select>
-            </div>
-
-            <div
-              className="edit-field full-width"
-              style={{ gridColumn: "span 2" }}
-            >
-              <label>⚖️ الحكم</label>
-
-              <textarea
-                rows={5}
-                placeholder="اكتب منطوق الحكم أو تفاصيل الحكم هنا..."
-                value={editForm.verdict || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    verdict: e.target.value,
-                  })
-                }
-              />
-            </div>
-
-            <div
-              className="edit-field full-width"
-              style={{ gridColumn: "span 2" }}
-            >
-              <label>ملاحظات</label>
-
-              <textarea
-                rows={3}
-                value={editForm.notes || ""}
-                onChange={(e) =>
-                  setEditForm({
-                    ...editForm,
-                    notes: e.target.value,
-                  })
-                }
-              />
-            </div>
+            <img src="/logo.png" alt="logo" />
           </div>
-        )}
-      </section>
 
-      <section className="panel">
-        <h2>📅 جلسات القضية ({sessions.length})</h2>
+          <div className="notice-card">
+            <div className="notice-title">إخطار بحكم المحكمة</div>
 
-        {sessions.length === 0 ? (
-          <p className="empty">
-            لا توجد جلسات مرتبطة بهذه القضية
-          </p>
-        ) : (
-          sessions.map((session) => {
-            const today = new Date().toISOString().split("T")[0];
+            <div className="notice-row">
+              <span className="notice-label">التاريخ</span>
+              <span className="notice-value">{noticeToPrint.notice_date || "—"}</span>
+            </div>
 
-            const isUpcoming =
-              session.session_date &&
-              session.session_date >= today;
+            <div className="notice-row">
+              <span className="notice-label">السادة</span>
+              <span className="notice-value">{noticeToPrint.recipient_name || "—"}</span>
+            </div>
 
-            return (
-              <div
-                className={`session-card ${
-                  isUpcoming ? "upcoming-session" : ""
-                }`}
-                key={session.id}
+            <div className="notice-row">
+              <span className="notice-label">نفيدكم بأن القضية</span>
+              <span className="notice-value">
+                {caseNumber} {caseType ? `- ${caseType}` : ""}
+              </span>
+            </div>
+
+            {noticeToPrint.reference_no && (
+              <div className="notice-row">
+                <span className="notice-label">الرقم الآلي</span>
+                <span className="notice-value">{noticeToPrint.reference_no}</span>
+              </div>
+            )}
+
+            <div className="notice-row">
+              <span className="notice-label">المقامة من</span>
+              <span className="notice-value">{noticeToPrint.plaintiff_name || "—"}</span>
+            </div>
+
+            <div className="notice-row">
+              <span className="notice-label">ضد</span>
+              <span className="notice-value">{noticeToPrint.defendant_name || "—"}</span>
+            </div>
+
+            <div className="notice-row">
+              <span className="notice-label">موضوعها</span>
+              <span className="notice-value">{noticeToPrint.case_subject || "—"}</span>
+            </div>
+
+            <div className="notice-row">
+              <span className="notice-label">أمام محكمة</span>
+              <span className="notice-value">{court}</span>
+            </div>
+
+            <div className="notice-row">
+              <span className="notice-label">تاريخ الحكم</span>
+              <span className="notice-value">{noticeToPrint.verdict_date || "—"}</span>
+            </div>
+
+            <div className="notice-row">
+              <span className="notice-label">حكمت المحكمة</span>
+              <span className="notice-value">{noticeToPrint.verdict_text || "—"}</span>
+            </div>
+
+            {noticeToPrint.additional_notes && (
+              <div className="notice-row">
+                <span className="notice-label">ملاحظات إضافية</span>
+                <span className="notice-value">{noticeToPrint.additional_notes}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!profilePrintMode && !noticeToPrint && (
+        <>
+          <section className="panel">
+            <h1 style={{ textAlign: "center" }}>📂 ملف القضية</h1>
+
+            <h2
+              style={{
+                textAlign: "center",
+                color: "#7c1c1c",
+              }}
+            >
+              {clientName}
+            </h2>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                justifyContent: "center",
+                flexWrap: "wrap",
+                margin: "15px 0",
+              }}
+            >
+              <Link to="/cases">
+                <button type="button">⬅️ رجوع</button>
+              </Link>
+
+              {!editing && (
+                <button
+                  type="button"
+                  className="btn-edit"
+                  onClick={() => setEditing(true)}
+                >
+                  ✏️ تعديل وإضافة حكم
+                </button>
+              )}
+
+              {editing && (
+                <button
+                  type="button"
+                  className="btn-save"
+                  onClick={saveEdit}
+                >
+                  💾 حفظ
+                </button>
+              )}
+
+              {editing && (
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={cancelEdit}
+                >
+                  ❌ إلغاء
+                </button>
+              )}
+
+              <button
+                type="button"
+                className="btn-notice"
+                onClick={openNoticeForm}
               >
-                <div>
-                  <b>📅 التاريخ</b>
-                  <span>{session.session_date || "—"}</span>
+                📄 إصدار إخطار
+              </button>
+
+              <button
+                type="button"
+                onClick={printProfile}
+              >
+                🖨️ طباعة
+              </button>
+            </div>
+
+            {!editing && (
+              <div className="info-grid">
+                <div className="info-item">
+                  <b>رقم القضية</b>
+                  <span>{caseNumber}</span>
                 </div>
 
-                <div>
-                  <b>🕐 الوقت</b>
-                  <span>{clean(session.session_time) || "—"}</span>
+                <div className="info-item">
+                  <b>رقم الملف</b>
+                  <span>{fileNo}</span>
                 </div>
 
-                <div>
-                  <b>📍 المكان</b>
-                  <span>{clean(session.location) || "—"}</span>
+                <div className="info-item">
+                  <b>نوع القضية</b>
+                  <span>{caseType}</span>
                 </div>
 
-                <div>
-                  <b>نوع الجلسة</b>
-                  <span>{clean(session.hearing_type) || "—"}</span>
+                <div className="info-item">
+                  <b>المحكمة</b>
+                  <span>{court}</span>
                 </div>
 
-                <div>
+                <div className="info-item">
+                  <b>رقم القاعة</b>
+                  <span>{clean(excelCase?.Chamber) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>الدور</b>
+                  <span>{clean(excelCase?.Floor) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>الرقم الإلكتروني</b>
+                  <span>{clean(excelCase?.ElectronicNo) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>رقم الهيئة</b>
+                  <span>{clean(excelCase?.JuryNo) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>بداية القضية</b>
+                  <span>{clean(excelCase?.CaseStartDate) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>نهاية القضية</b>
+                  <span>{clean(excelCase?.CaseEndDate) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>الحالة</b>
+                  <span>{status}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>صفة الموكل</b>
+                  <span>{clean(excelCase?.ClientStatus) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>صفة الخصم</b>
+                  <span>{clean(excelCase?.OpponentStatus) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>تاريخ الحكم القديم</b>
+                  <span>{clean(excelCase?.VerdictDate) || "—"}</span>
+                </div>
+
+                <div className="info-item">
+                  <b>نتيجة الحكم القديمة</b>
+                  <span>{clean(excelCase?.VerdictResult) || "—"}</span>
+                </div>
+
+                <div
+                  className="info-item verdict-item full-width"
+                  style={{ gridColumn: "span 3" }}
+                >
+                  <b>⚖️ الحكم</b>
+                  <span>{verdict}</span>
+                </div>
+
+                <div className="info-item">
                   <b>المسؤول</b>
-                  <span>{clean(session.lawyer) || "—"}</span>
+                  <span>{clean(caseItem.lawyer) || "—"}</span>
                 </div>
 
-                <div>
+                <div className="info-item">
+                  <b>الخصم</b>
+                  <span>{opponent}</span>
+                </div>
+
+                <div
+                  className="info-item full-width"
+                  style={{ gridColumn: "span 3" }}
+                >
                   <b>ملاحظات</b>
-                  <span>{clean(session.notes) || "—"}</span>
+                  <span>{clean(caseItem.notes) || "لا توجد"}</span>
                 </div>
               </div>
-            );
-          })
-        )}
-      </section>
+            )}
+
+            {editing && (
+              <div className="edit-grid">
+                <div className="edit-field">
+                  <label>اسم الموكل</label>
+                  <input
+                    value={editForm.client_name || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        client_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>رقم القضية</label>
+                  <input
+                    value={editForm.case_number || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        case_number: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>رقم الملف</label>
+                  <input
+                    value={editForm.file_no || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        file_no: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>نوع القضية</label>
+                  <input
+                    value={editForm.case_type || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        case_type: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>المحكمة</label>
+                  <input
+                    value={editForm.court || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        court: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>المسؤول</label>
+                  <input
+                    value={editForm.lawyer || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        lawyer: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>الخصم</label>
+                  <input
+                    value={editForm.opponent_name || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        opponent_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>الحالة</label>
+                  <select
+                    value={editForm.status || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        status: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">اختر الحالة</option>
+                    <option value="متداولة">متداولة</option>
+                    <option value="منتهية">منتهية</option>
+                    <option value="التنفيذ">التنفيذ</option>
+                    <option value="الحفظ">الحفظ</option>
+                    <option value="موقوفة">موقوفة</option>
+                    <option value="مؤرشفة">مؤرشفة</option>
+                  </select>
+                </div>
+
+                <div
+                  className="edit-field full-width"
+                  style={{ gridColumn: "span 2" }}
+                >
+                  <label>⚖️ الحكم</label>
+
+                  <textarea
+                    rows={5}
+                    placeholder="اكتب منطوق الحكم أو تفاصيل الحكم هنا..."
+                    value={editForm.verdict || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        verdict: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div
+                  className="edit-field full-width"
+                  style={{ gridColumn: "span 2" }}
+                >
+                  <label>ملاحظات</label>
+
+                  <textarea
+                    rows={3}
+                    value={editForm.notes || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        notes: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="panel">
+            <h2>📄 الإخطارات ({notices.length})</h2>
+
+            {showNoticeForm && (
+              <div className="edit-grid">
+                <div className="edit-field">
+                  <label>السادة (المرسل إليه)</label>
+                  <input
+                    value={noticeForm.recipient_name || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        recipient_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>تاريخ الإخطار</label>
+                  <input
+                    type="date"
+                    value={noticeForm.notice_date || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        notice_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>المقامة من</label>
+                  <input
+                    value={noticeForm.plaintiff_name || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        plaintiff_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>ضد</label>
+                  <input
+                    value={noticeForm.defendant_name || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        defendant_name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>موضوع الدعوى</label>
+                  <input
+                    value={noticeForm.case_subject || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        case_subject: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>تاريخ الحكم</label>
+                  <input
+                    type="date"
+                    value={noticeForm.verdict_date || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        verdict_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>الرقم الآلي (اختياري)</label>
+                  <input
+                    value={noticeForm.reference_no || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        reference_no: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field full-width" style={{ gridColumn: "span 2" }}>
+                  <label>حكمت المحكمة (نص الحكم)</label>
+                  <textarea
+                    rows={4}
+                    value={noticeForm.verdict_text || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        verdict_text: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field full-width" style={{ gridColumn: "span 2" }}>
+                  <label>ملاحظات إضافية (اختياري)</label>
+                  <textarea
+                    rows={3}
+                    value={noticeForm.additional_notes || ""}
+                    onChange={(e) =>
+                      setNoticeForm({
+                        ...noticeForm,
+                        additional_notes: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", gridColumn: "span 2" }}>
+                  <button
+                    type="button"
+                    className="btn-save"
+                    onClick={saveNotice}
+                    disabled={savingNotice}
+                  >
+                    {savingNotice ? "جاري الحفظ..." : "💾 حفظ وإصدار"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-cancel"
+                    onClick={cancelNoticeForm}
+                  >
+                    ❌ إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!showNoticeForm && notices.length === 0 && (
+              <p className="empty">لا توجد إخطارات صادرة لهذه القضية</p>
+            )}
+
+            {!showNoticeForm &&
+              notices.map((notice) => (
+                <div className="notice-history-item" key={notice.id}>
+                  <div>
+                    <b>{notice.recipient_name || "بدون اسم"}</b>
+                    {" — "}
+                    {notice.notice_date || "بدون تاريخ"}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn-print-notice"
+                    onClick={() => printNotice(notice)}
+                  >
+                    🖨️ إعادة طباعة
+                  </button>
+                </div>
+              ))}
+          </section>
+
+          <section className="panel">
+            <h2>📅 جلسات القضية ({sessions.length})</h2>
+
+            {sessions.length === 0 ? (
+              <p className="empty">
+                لا توجد جلسات مرتبطة بهذه القضية
+              </p>
+            ) : (
+              sessions.map((session) => {
+                const today = new Date().toISOString().split("T")[0];
+
+                const isUpcoming =
+                  session.session_date &&
+                  session.session_date >= today;
+
+                return (
+                  <div
+                    className={`session-card ${
+                      isUpcoming ? "upcoming-session" : ""
+                    }`}
+                    key={session.id}
+                  >
+                    <div>
+                      <b>📅 التاريخ</b>
+                      <span>{session.session_date || "—"}</span>
+                    </div>
+
+                    <div>
+                      <b>🕐 الوقت</b>
+                      <span>{clean(session.session_time) || "—"}</span>
+                    </div>
+
+                    <div>
+                      <b>📍 المكان</b>
+                      <span>{clean(session.location) || "—"}</span>
+                    </div>
+
+                    <div>
+                      <b>نوع الجلسة</b>
+                      <span>{clean(session.hearing_type) || "—"}</span>
+                    </div>
+
+                    <div>
+                      <b>المسؤول</b>
+                      <span>{clean(session.lawyer) || "—"}</span>
+                    </div>
+
+                    <div>
+                      <b>ملاحظات</b>
+                      <span>{clean(session.notes) || "—"}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }
