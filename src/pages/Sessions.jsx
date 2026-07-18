@@ -75,6 +75,22 @@ function Sessions() {
     return "";
   }
 
+  function getPreviousSession(session) {
+    if (!session.case_id) return null;
+
+    const currentDate = normalizeDate(session.session_date);
+
+    const earlierSessions = sessions
+      .filter((item) => item.case_id === session.case_id && item.id !== session.id)
+      .filter((item) => {
+        const itemDate = normalizeDate(item.session_date);
+        return itemDate && (!currentDate || itemDate < currentDate);
+      })
+      .sort((a, b) => normalizeDate(b.session_date).localeCompare(normalizeDate(a.session_date)));
+
+    return earlierSessions[0] || null;
+  }
+
   const today = getKuwaitDate(0);
   const tomorrow = getKuwaitDate(1);
   const nextWeek = getKuwaitDate(7);
@@ -251,6 +267,20 @@ function Sessions() {
     }, {});
   }, [filteredSessions, groupBy]);
 
+  const printDayGroups = useMemo(() => {
+    const groups = {};
+
+    filteredSessions.forEach((session) => {
+      const dateKey = normalizeDate(session.session_date) || "بدون تاريخ";
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(session);
+    });
+
+    return Object.keys(groups)
+      .sort()
+      .map((dateKey) => ({ dateKey, items: groups[dateKey] }));
+  }, [filteredSessions]);
+
   const todaySessions = sessions.filter(
     (session) => normalizeDate(session.session_date) === today
   );
@@ -330,24 +360,142 @@ function Sessions() {
         @media print {
           nav,
           .no-print,
+          .screen-roll,
           .session-modal-overlay {
             display: none !important;
           }
 
           .panel {
             box-shadow: none !important;
+            padding: 0 !important;
           }
 
           .print-header {
             display: block !important;
-            text-align: center;
-            margin-bottom: 20px;
+          }
+
+          .print-roll {
+            display: block !important;
+          }
+
+          .print-day-block {
+            break-inside: avoid;
+          }
+
+          .print-case-block {
+            break-inside: avoid;
           }
         }
 
         .print-header {
           display: none;
         }
+
+        .print-roll {
+          display: none;
+        }
+
+        .print-letterhead {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 3px solid #7c1c1c;
+          padding-bottom: 12px;
+          margin-bottom: 10px;
+        }
+
+        .print-letterhead img {
+          height: 55px;
+          object-fit: contain;
+        }
+
+        .print-letterhead .firm-name {
+          text-align: right;
+        }
+
+        .print-letterhead .firm-name h2 {
+          margin: 0;
+          color: #7c1c1c;
+          font-size: 18px;
+        }
+
+        .print-letterhead .firm-name p {
+          margin: 2px 0 0 0;
+          color: #666;
+          font-size: 11px;
+        }
+
+        .print-info-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: #f3f3f3;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          padding: 8px 14px;
+          margin-bottom: 16px;
+          font-size: 12px;
+          font-weight: bold;
+          color: #333;
+        }
+
+        .print-day-block {
+          margin-bottom: 14px;
+        }
+
+        .print-day-header {
+          background: #e3e3e3;
+          color: #7c1c1c;
+          text-align: center;
+          font-weight: bold;
+          font-size: 13px;
+          padding: 6px;
+          border: 1px solid #ccc;
+        }
+
+        .print-case-block {
+          border: 1px solid #ddd;
+          border-top: none;
+          padding: 6px 10px;
+          font-size: 11px;
+        }
+
+        .print-case-block:nth-child(even) {
+          background: #fafafa;
+        }
+
+        .print-case-row {
+          display: flex;
+          justify-content: space-between;
+          gap: 10px;
+          color: #666;
+        }
+
+        .print-case-row-main {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          color: #222;
+          font-weight: bold;
+          padding: 4px 0;
+          border-top: 1px dashed #ddd;
+          border-bottom: 1px dashed #ddd;
+          margin: 3px 0;
+        }
+
+        .print-case-date {
+          color: #7c1c1c;
+        }
+
+        .print-case-file {
+          color: #166534;
+        }
+
+        .print-case-result {
+          color: #166534;
+        }
+
 
         .group-header {
           background: #e9e9e9;
@@ -583,10 +731,21 @@ function Sessions() {
       `}</style>
 
       <div className="print-header">
-        <h2>⚖️ مكتب أنس الحيدر للمحاماة</h2>
-        <h3>
-          رول الجلسات — {fromDate || "الكل"} إلى {toDate || "الكل"}
-        </h3>
+        <div className="print-letterhead">
+          <div className="firm-name">
+            <h2>مكتب أنس الحيدر</h2>
+            <p>للمحاماة والاستشارات القانونية</p>
+          </div>
+          <img src="/logo.png" alt="logo" />
+        </div>
+
+        <div className="print-info-bar">
+          <span>العدد: {filteredSessions.length}</span>
+          <span>📅 رول الجلسات</span>
+          <span>
+            من {fromDate || "بداية"} إلى {toDate || "نهاية"}
+          </span>
+        </div>
       </div>
 
       <section className="panel no-print">
@@ -707,101 +866,156 @@ function Sessions() {
 
         {loading && <p style={{ textAlign: "center" }}>جاري تحميل الجلسات...</p>}
 
-        {!loading &&
-          Object.keys(groupedSessions)
-            .sort()
-            .map((groupName) => (
-              <div key={groupName}>
-                <div className="group-header">
-                  <span>
-                    {getGroupTitle(groupName)}
+        {!loading && (
+          <div className="screen-roll">
+            {Object.keys(groupedSessions)
+              .sort()
+              .map((groupName) => (
+                <div key={groupName}>
+                  <div className="group-header">
+                    <span>
+                      {getGroupTitle(groupName)}
 
-                    {groupBy === "date" && groupName === today && (
-                      <span className="today-badge">اليوم</span>
-                    )}
-                  </span>
+                      {groupBy === "date" && groupName === today && (
+                        <span className="today-badge">اليوم</span>
+                      )}
+                    </span>
 
-                  <span className="group-count">
-                    {groupedSessions[groupName].length} جلسة
-                  </span>
-                </div>
+                    <span className="group-count">
+                      {groupedSessions[groupName].length} جلسة
+                    </span>
+                  </div>
 
-                <div className="table-box">
-                  <table className="sessions-table">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>الأطراف</th>
-                        <th>المحكمة</th>
-                        <th>رقم القضية</th>
-                        <th>المسؤول</th>
-                        <th>نوع الجلسة</th>
-                        <th>التاريخ</th>
-                        <th>الوقت</th>
-                        <th>قرار الجلسة</th>
-                        <th>رقم الملف</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {groupedSessions[groupName].map((item, index) => (
-                        <tr
-                          key={item.id}
-                          onClick={() => openSession(item)}
-                        >
-                          <td>{index + 1}</td>
-                          <td className="parties-cell">
-                            <div className="party-plaintiff">
-                              {item.cases?.client_name ||
-                                item.client_name ||
-                                "—"}{" "}
-                              <span className="party-label">(مدعي)</span>
-                            </div>
-
-                            {(item.cases?.opponent_name || item.opponent) && (
-                              <div className="party-defendant">
-                                {item.cases?.opponent_name || item.opponent}{" "}
-                                <span className="party-label">(مدعى عليه)</span>
-                              </div>
-                            )}
-                          </td>
-                          <td>
-                            {item.cases?.court ||
-                              item.location ||
-                              "—"}
-                          </td>
-                          <td>{item.cases?.case_number || "—"}</td>
-                          <td>
-                            {item.lawyer ||
-                              item.cases?.lawyer ||
-                              "—"}
-                          </td>
-                          <td>{item.hearing_type || "—"}</td>
-                          <td>{normalizeDate(item.session_date) || "—"}</td>
-                          <td>{item.session_time || "—"}</td>
-                          <td className="result-cell">
-                            {item.session_result ? (
-                              <span className="result-ready">
-                                {item.session_result}
-                              </span>
-                            ) : (
-                              <span className="result-empty">
-                                اضغط لإضافة القرار
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            {item.cases?.file_no ||
-                              item.file_no ||
-                              "—"}
-                          </td>
+                  <div className="table-box">
+                    <table className="sessions-table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>الأطراف</th>
+                          <th>المحكمة</th>
+                          <th>رقم القضية</th>
+                          <th>المسؤول</th>
+                          <th>نوع الجلسة</th>
+                          <th>التاريخ</th>
+                          <th>الوقت</th>
+                          <th>قرار الجلسة</th>
+                          <th>رقم الملف</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+
+                      <tbody>
+                        {groupedSessions[groupName].map((item, index) => (
+                          <tr
+                            key={item.id}
+                            onClick={() => openSession(item)}
+                          >
+                            <td>{index + 1}</td>
+                            <td className="parties-cell">
+                              <div className="party-plaintiff">
+                                {item.cases?.client_name ||
+                                  item.client_name ||
+                                  "—"}{" "}
+                                <span className="party-label">(مدعي)</span>
+                              </div>
+
+                              {(item.cases?.opponent_name || item.opponent) && (
+                                <div className="party-defendant">
+                                  {item.cases?.opponent_name || item.opponent}{" "}
+                                  <span className="party-label">(مدعى عليه)</span>
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              {item.cases?.court ||
+                                item.location ||
+                                "—"}
+                            </td>
+                            <td>{item.cases?.case_number || "—"}</td>
+                            <td>
+                              {item.lawyer ||
+                                item.cases?.lawyer ||
+                                "—"}
+                            </td>
+                            <td>{item.hearing_type || "—"}</td>
+                            <td>{normalizeDate(item.session_date) || "—"}</td>
+                            <td>{item.session_time || "—"}</td>
+                            <td className="result-cell">
+                              {item.session_result ? (
+                                <span className="result-ready">
+                                  {item.session_result}
+                                </span>
+                              ) : (
+                                <span className="result-empty">
+                                  اضغط لإضافة القرار
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              {item.cases?.file_no ||
+                                item.file_no ||
+                                "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
+              ))}
+          </div>
+        )}
+
+        {!loading && (
+          <div className="print-roll">
+            {printDayGroups.map(({ dateKey, items }) => (
+              <div className="print-day-block" key={dateKey}>
+                <div className="print-day-header">{formatDate(dateKey)}</div>
+
+                {items.map((item, index) => {
+                  const previous = getPreviousSession(item);
+
+                  return (
+                    <div className="print-case-block" key={item.id}>
+                      <div className="print-case-row">
+                        <span>
+                          {index + 1}. الخصم: {item.cases?.opponent_name || item.opponent || "—"} (مدعى عليه)
+                        </span>
+                        <span>{item.cases?.court || item.location || "—"}</span>
+                        <span>{item.cases?.case_type || "—"}</span>
+                      </div>
+
+                      <div className="print-case-row-main">
+                        <span>{item.cases?.case_number || "—"}</span>
+                        <span>{item.lawyer || item.cases?.lawyer || "—"}</span>
+                        <span>{item.hearing_type || "جلسة محكمة"}</span>
+                        <span className="print-case-date">
+                          {normalizeDate(item.session_date) || "—"} {item.session_time || ""}
+                        </span>
+                        <span className="print-case-result">
+                          {item.session_result || "لم تحدد النتيجة"}
+                        </span>
+                        <span className="print-case-file">
+                          ملف: {item.cases?.file_no || item.file_no || "—"}
+                        </span>
+                      </div>
+
+                      <div className="print-case-row">
+                        <span>
+                          الموكل: {item.cases?.client_name || item.client_name || "—"} (مدعي)
+                        </span>
+                        <span>
+                          {previous
+                            ? `آخر جلسة سابقة: ${normalizeDate(previous.session_date)} ${previous.session_time || ""} — ${previous.session_result || "بدون قرار مسجل"}`
+                            : "لا توجد جلسة سابقة مسجلة"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ))}
+          </div>
+        )}
 
         {!loading && filteredSessions.length === 0 && (
           <p style={{ textAlign: "center", padding: "30px" }}>
