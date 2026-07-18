@@ -216,6 +216,23 @@ function CaseProfile() {
     setShowNoticeForm(false);
   }
 
+  async function deleteNotice(noticeId) {
+    const ok = confirm("هل تريد حذف هذا الإخطار نهائياً؟");
+    if (!ok) return;
+
+    const { error } = await supabase
+      .from("notices")
+      .delete()
+      .eq("id", noticeId);
+
+    if (error) {
+      alert("خطأ أثناء حذف الإخطار: " + error.message);
+      return;
+    }
+
+    await loadNotices();
+  }
+
   async function saveNotice() {
     if (!noticeForm.recipient_name?.trim()) {
       alert("اكتب اسم المرسل إليه (السادة)");
@@ -443,6 +460,16 @@ function CaseProfile() {
 
         .notice-history-item .btn-print-notice {
           background: #3b82f6;
+          color: white;
+          border: none;
+          padding: 6px 14px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 12px;
+        }
+
+        .notice-history-item .btn-delete {
+          background: #ef4444;
           color: white;
           border: none;
           padding: 6px 14px;
@@ -1234,13 +1261,23 @@ function CaseProfile() {
                     {notice.notice_date || "بدون تاريخ"}
                   </div>
 
-                  <button
-                    type="button"
-                    className="btn-print-notice"
-                    onClick={() => printNotice(notice)}
-                  >
-                    🖨️ إعادة طباعة
-                  </button>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      className="btn-print-notice"
+                      onClick={() => printNotice(notice)}
+                    >
+                      🖨️ إعادة طباعة
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-delete"
+                      onClick={() => deleteNotice(notice.id)}
+                    >
+                      🗑️ حذف
+                    </button>
+                  </div>
                 </div>
               ))}
           </section>
