@@ -79,6 +79,15 @@ function CaseProfile() {
       status: caseData.status || "",
       verdict: caseData.verdict || "",
       notes: caseData.notes || "",
+      chamber: caseData.chamber || "",
+      floor: caseData.floor || "",
+      jury_no: caseData.jury_no || "",
+      electronic_no: caseData.electronic_no || "",
+      case_start_date: caseData.case_start_date || "",
+      client_status: caseData.client_status || "",
+      opponent_status: caseData.opponent_status || "",
+      old_verdict_date: caseData.old_verdict_date || "",
+      old_verdict_result: caseData.old_verdict_result || "",
     });
 
     const normalizedCaseNumber = clean(caseData.case_number);
@@ -169,6 +178,15 @@ function CaseProfile() {
       status: editForm.status || "",
       verdict: editForm.verdict?.trim() || "",
       notes: editForm.notes?.trim() || "",
+      chamber: editForm.chamber?.trim() || "",
+      floor: editForm.floor?.trim() || "",
+      jury_no: editForm.jury_no?.trim() || "",
+      electronic_no: editForm.electronic_no?.trim() || "",
+      case_start_date: editForm.case_start_date?.trim() || "",
+      client_status: editForm.client_status?.trim() || "",
+      opponent_status: editForm.opponent_status?.trim() || "",
+      old_verdict_date: editForm.old_verdict_date?.trim() || "",
+      old_verdict_result: editForm.old_verdict_result?.trim() || "",
     };
 
     const { error } = await supabase
@@ -217,6 +235,15 @@ function CaseProfile() {
       status: caseItem.status || "",
       verdict: caseItem.verdict || "",
       notes: caseItem.notes || "",
+      chamber: caseItem.chamber || "",
+      floor: caseItem.floor || "",
+      jury_no: caseItem.jury_no || "",
+      electronic_no: caseItem.electronic_no || "",
+      case_start_date: caseItem.case_start_date || "",
+      client_status: caseItem.client_status || "",
+      opponent_status: caseItem.opponent_status || "",
+      old_verdict_date: caseItem.old_verdict_date || "",
+      old_verdict_result: caseItem.old_verdict_result || "",
     });
 
     setEditing(false);
@@ -1072,27 +1099,27 @@ function CaseProfile() {
 
                 <div className="info-item">
                   <b>رقم القاعة</b>
-                  <span>{clean(excelCase?.Chamber) || "—"}</span>
+                  <span>{clean(caseItem.chamber) || clean(excelCase?.Chamber) || "—"}</span>
                 </div>
 
                 <div className="info-item">
                   <b>الدور</b>
-                  <span>{clean(excelCase?.Floor) || "—"}</span>
+                  <span>{clean(caseItem.floor) || clean(excelCase?.Floor) || "—"}</span>
                 </div>
 
                 <div className="info-item">
                   <b>الرقم الآلي</b>
-                  <span>{clean(excelCase?.ElectronicNo) || "—"}</span>
+                  <span>{clean(caseItem.electronic_no) || clean(excelCase?.ElectronicNo) || "—"}</span>
                 </div>
 
                 <div className="info-item">
                   <b>رقم الهيئة</b>
-                  <span>{clean(excelCase?.JuryNo) || "—"}</span>
+                  <span>{clean(caseItem.jury_no) || clean(excelCase?.JuryNo) || "—"}</span>
                 </div>
 
                 <div className="info-item">
                   <b>بداية القضية</b>
-                  <span>{clean(excelCase?.CaseStartDate) || "—"}</span>
+                  <span>{clean(caseItem.case_start_date) || clean(excelCase?.CaseStartDate) || "—"}</span>
                 </div>
 
                 <div className="info-item">
@@ -1107,22 +1134,22 @@ function CaseProfile() {
 
                 <div className="info-item">
                   <b>صفة الموكل</b>
-                  <span>{clean(excelCase?.ClientStatus) || "—"}</span>
+                  <span>{clean(caseItem.client_status) || clean(excelCase?.ClientStatus) || "—"}</span>
                 </div>
 
                 <div className="info-item">
                   <b>صفة الخصم</b>
-                  <span>{clean(excelCase?.OpponentStatus) || "—"}</span>
+                  <span>{clean(caseItem.opponent_status) || clean(excelCase?.OpponentStatus) || "—"}</span>
                 </div>
 
                 <div className="info-item">
                   <b>تاريخ الحكم القديم</b>
-                  <span>{clean(excelCase?.VerdictDate) || "—"}</span>
+                  <span>{clean(caseItem.old_verdict_date) || clean(excelCase?.VerdictDate) || "—"}</span>
                 </div>
 
                 <div className="info-item">
                   <b>نتيجة الحكم القديمة</b>
-                  <span>{clean(excelCase?.VerdictResult) || "—"}</span>
+                  <span>{clean(caseItem.old_verdict_result) || clean(excelCase?.VerdictResult) || "—"}</span>
                 </div>
 
                 <div
@@ -1265,6 +1292,123 @@ function CaseProfile() {
                     <option value="موقوفة">موقوفة</option>
                     <option value="مؤرشفة">مؤرشفة</option>
                   </select>
+                </div>
+
+                <div className="edit-field">
+                  <label>رقم القاعة</label>
+                  <input
+                    value={editForm.chamber || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        chamber: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>الدور</label>
+                  <input
+                    value={editForm.floor || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        floor: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>الرقم الآلي</label>
+                  <input
+                    value={editForm.electronic_no || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        electronic_no: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>رقم الهيئة</label>
+                  <input
+                    value={editForm.jury_no || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        jury_no: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>بداية القضية</label>
+                  <input
+                    value={editForm.case_start_date || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        case_start_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>صفة الموكل</label>
+                  <input
+                    value={editForm.client_status || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        client_status: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>صفة الخصم</label>
+                  <input
+                    value={editForm.opponent_status || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        opponent_status: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>تاريخ الحكم القديم</label>
+                  <input
+                    value={editForm.old_verdict_date || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        old_verdict_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>نتيجة الحكم القديمة</label>
+                  <input
+                    value={editForm.old_verdict_result || ""}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        old_verdict_result: e.target.value,
+                      })
+                    }
+                  />
                 </div>
 
                 <div
