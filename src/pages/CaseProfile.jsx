@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase";
 
 function CaseProfile() {
@@ -18,6 +18,7 @@ function CaseProfile() {
 
   const [profilePrintMode, setProfilePrintMode] = useState(false);
   const [noticeToPrint, setNoticeToPrint] = useState(null);
+  const printExitRef = useRef(null);
 
   useEffect(() => {
     loadCase();
@@ -282,7 +283,10 @@ function CaseProfile() {
       document.body.classList.remove("print-mode");
       window.removeEventListener("afterprint", exitPrint);
       clearTimeout(fallbackTimer);
+      printExitRef.current = null;
     };
+
+    printExitRef.current = exitPrint;
 
     onEnter();
     fallbackTimer = setTimeout(exitPrint, 10000);
@@ -293,6 +297,16 @@ function CaseProfile() {
         window.print();
       });
     });
+  }
+
+  function closePrintView() {
+    if (printExitRef.current) {
+      printExitRef.current();
+    } else {
+      setProfilePrintMode(false);
+      setNoticeToPrint(null);
+      document.body.classList.remove("print-mode");
+    }
   }
 
   function printProfile() {
@@ -368,6 +382,22 @@ function CaseProfile() {
           .print-letterhead {
             break-inside: avoid;
           }
+
+          .no-print {
+            display: none !important;
+          }
+        }
+
+        .back-from-print-btn {
+          display: block;
+          margin: 0 0 16px auto;
+          background: #374151;
+          color: white;
+          border: none;
+          padding: 8px 18px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 14px;
         }
 
         .print-letterhead {
@@ -625,6 +655,14 @@ function CaseProfile() {
 
       {profilePrintMode && (
         <div>
+          <button
+            type="button"
+            className="back-from-print-btn no-print"
+            onClick={closePrintView}
+          >
+            🔙 رجوع
+          </button>
+
           <div className="print-letterhead">
             <div className="firm-name">
               <h2>مكتب أنس الحيدر</h2>
@@ -694,6 +732,14 @@ function CaseProfile() {
 
       {noticeToPrint && (
         <div>
+          <button
+            type="button"
+            className="back-from-print-btn no-print"
+            onClick={closePrintView}
+          >
+            🔙 رجوع
+          </button>
+
           <div className="print-letterhead">
             <div className="firm-name">
               <h2>مكتب أنس الحيدر</h2>
@@ -875,7 +921,7 @@ function CaseProfile() {
                 </div>
 
                 <div className="info-item">
-                  <b>الرقم الإلكتروني</b>
+                  <b>الرقم الآلي</b>
                   <span>{clean(excelCase?.ElectronicNo) || "—"}</span>
                 </div>
 

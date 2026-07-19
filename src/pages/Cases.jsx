@@ -338,7 +338,7 @@ function Cases() {
                       <span className="missing-data-badge">بيانات ناقصة</span>
                     )}
                     {hasMissingElectronicNo(item) && (
-                      <span className="missing-data-badge electronic-no-badge">بدون رقم إلكتروني</span>
+                      <span className="missing-data-badge electronic-no-badge">بدون رقم آلي</span>
                     )}
                   </div>
                   <div className="case-info-item"><b>رقم الملف</b>{item.file_no || "—"}</div>
