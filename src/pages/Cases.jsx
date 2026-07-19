@@ -116,7 +116,7 @@ function Cases() {
   async function getExcelLevels() {
     const { data, error } = await supabase
       .from("excel_case_levels")
-      .select("CourtCaseNo, Chamber, Floor, JuryNo, ClientStatus, OpponentStatus, CaseStartDate, CaseEndDate");
+      .select("CourtCaseNo, Chamber, Floor, JuryNo, ClientStatus, OpponentStatus, CaseStartDate, CaseEndDate, ElectronicNo");
     if (error) return;
     setExcelLevels(data || []);
   }
