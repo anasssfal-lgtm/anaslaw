@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "../supabase";
 
 function Sessions() {
@@ -768,6 +769,18 @@ function Sessions() {
           cursor: pointer;
         }
 
+        .open-case-file-btn {
+          display: block;
+          text-align: center;
+          background: #7c1c1c;
+          color: white;
+          text-decoration: none;
+          border-radius: 8px;
+          padding: 10px 16px;
+          margin: 0 0 16px;
+          font-weight: bold;
+        }
+
         .moj-link-btn {
           background: #1d4ed8;
           color: white;
@@ -1111,6 +1124,15 @@ function Sessions() {
                 إغلاق ✕
               </button>
             </div>
+
+            {(selectedSession.cases?.id || selectedSession.case_id) && (
+              <Link
+                to={`/cases/${selectedSession.cases?.id || selectedSession.case_id}`}
+                className="open-case-file-btn"
+              >
+                📂 فتح ملف القضية الكامل
+              </Link>
+            )}
 
             <div className="details-grid">
               <div className="detail-item">
