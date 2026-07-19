@@ -134,17 +134,32 @@ function Cases() {
     return map;
   }, [excelLevels]);
 
+  function isBlank(v) {
+    return v === null || v === undefined || String(v).trim() === "";
+  }
+
   function hasMissingExcelData(item) {
+    const ownFields = [
+      item.chamber,
+      item.floor,
+      item.jury_no,
+      item.client_status,
+      item.opponent_status,
+      item.case_start_date,
+    ];
+    if (ownFields.some((v) => !isBlank(v))) return false;
+
     const row = excelLevelsByCaseNo.get(normalizeCaseNo(item.case_number));
     if (!row) return true;
     const fields = [row.Chamber, row.Floor, row.JuryNo, row.ClientStatus, row.OpponentStatus, row.CaseStartDate, row.CaseEndDate];
-    return fields.every((v) => v === null || v === undefined || String(v).trim() === "");
+    return fields.every(isBlank);
   }
 
   function hasMissingElectronicNo(item) {
+    if (!isBlank(item.electronic_no)) return false;
+
     const row = excelLevelsByCaseNo.get(normalizeCaseNo(item.case_number));
-    const value = row?.ElectronicNo;
-    return value === null || value === undefined || String(value).trim() === "";
+    return isBlank(row?.ElectronicNo);
   }
 
   function getCaseSessions(caseItem) {
