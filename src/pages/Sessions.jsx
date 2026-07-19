@@ -164,6 +164,8 @@ function Sessions() {
   }, [excelLevels]);
 
   function getElectronicNo(session) {
+    if (session?.cases?.electronic_no) return session.cases.electronic_no;
+
     const caseNumber = normalizeCaseNo(session?.cases?.case_number);
     return caseNumber ? electronicNoByCaseNo.get(caseNumber) || "" : "";
   }
@@ -209,7 +211,8 @@ function Sessions() {
             file_no,
             notes,
             status,
-            verdict
+            verdict,
+            electronic_no
           )
         `)
         .order("session_date", { ascending: true })
