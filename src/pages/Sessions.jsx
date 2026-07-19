@@ -15,6 +15,8 @@ function Sessions() {
 
   const [printMode, setPrintMode] = useState(false);
 
+  const [excelLevels, setExcelLevels] = useState([]);
+
   function getKuwaitDate(daysToAdd = 0) {
     const now = new Date();
 
@@ -99,7 +101,39 @@ function Sessions() {
 
   useEffect(() => {
     getSessions();
+    getExcelLevels();
   }, []);
+
+  async function getExcelLevels() {
+    const { data, error } = await supabase
+      .from("excel_case_levels")
+      .select("CourtCaseNo, ElectronicNo");
+
+    if (error) {
+      console.log("EXCEL LEVELS ERROR:", error);
+      return;
+    }
+
+    setExcelLevels(data || []);
+  }
+
+  function normalizeCaseNo(value) {
+    return value ? String(value).trim() : "";
+  }
+
+  const electronicNoByCaseNo = useMemo(() => {
+    const map = new Map();
+    excelLevels.forEach((row) => {
+      const key = normalizeCaseNo(row.CourtCaseNo);
+      if (key && row.ElectronicNo) map.set(key, row.ElectronicNo);
+    });
+    return map;
+  }, [excelLevels]);
+
+  function getElectronicNo(session) {
+    const caseNumber = normalizeCaseNo(session?.cases?.case_number);
+    return caseNumber ? electronicNoByCaseNo.get(caseNumber) || "" : "";
+  }
 
   async function getSessions() {
     setLoading(true);
@@ -1072,6 +1106,11 @@ function Sessions() {
               <div className="detail-item">
                 <b>رقم القضية</b>
                 <span>{selectedSession.cases?.case_number || "—"}</span>
+              </div>
+
+              <div className="detail-item">
+                <b>الرقم الآلي</b>
+                <span>{getElectronicNo(selectedSession) || "—"}</span>
               </div>
 
               <div className="detail-item">
