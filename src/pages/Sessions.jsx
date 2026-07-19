@@ -135,6 +135,22 @@ function Sessions() {
     return caseNumber ? electronicNoByCaseNo.get(caseNumber) || "" : "";
   }
 
+  const MOJ_PORTAL_URL = "https://eservices.moj.gov.kw/searchPages/searchCases.jsp";
+
+  function openMojPortal(session) {
+    const electronicNo = getElectronicNo(session);
+    if (!electronicNo) {
+      alert("ما فيه رقم آلي مسجل لهذي القضية");
+      return;
+    }
+
+    window.open(MOJ_PORTAL_URL, "_blank", "noopener,noreferrer");
+
+    navigator.clipboard
+      .writeText(String(electronicNo))
+      .catch((err) => console.log("CLIPBOARD ERROR:", err));
+  }
+
   async function getSessions() {
     setLoading(true);
 
@@ -750,6 +766,22 @@ function Sessions() {
           cursor: pointer;
         }
 
+        .moj-link-btn {
+          background: #1d4ed8;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          padding: 6px 14px;
+          cursor: pointer;
+          font-size: 13px;
+          width: fit-content;
+        }
+
+        .moj-link-btn:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+        }
+
         @media (max-width: 800px) {
           .details-grid {
             grid-template-columns: 1fr;
@@ -1111,6 +1143,18 @@ function Sessions() {
               <div className="detail-item">
                 <b>الرقم الآلي</b>
                 <span>{getElectronicNo(selectedSession) || "—"}</span>
+              </div>
+
+              <div className="detail-item">
+                <b>مستجدات القضية</b>
+                <button
+                  type="button"
+                  className="moj-link-btn"
+                  disabled={!getElectronicNo(selectedSession)}
+                  onClick={() => openMojPortal(selectedSession)}
+                >
+                  🔍 فتح بوابة وزارة العدل
+                </button>
               </div>
 
               <div className="detail-item">
