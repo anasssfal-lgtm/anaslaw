@@ -137,24 +137,6 @@ function Sessions() {
 
   const MOJ_PORTAL_URL = "https://eservices.moj.gov.kw/searchPages/searchCases.jsp";
 
-  function copyText(text) {
-    try {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.focus();
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      return true;
-    } catch (err) {
-      console.log("COPY ERROR:", err);
-      return false;
-    }
-  }
-
   function openMojPortal(session) {
     const electronicNo = getElectronicNo(session);
     if (!electronicNo) {
@@ -162,12 +144,13 @@ function Sessions() {
       return;
     }
 
-    const copied = copyText(String(electronicNo));
-    window.open(MOJ_PORTAL_URL, "_blank", "noopener,noreferrer");
+    alert(
+      "الرقم الآلي: " +
+        electronicNo +
+        "\n\nخذ بالك من الرقم، بعد ما تضغط موافق بيفتح موقع وزارة العدل وتقدر تكتبه بخانة البحث."
+    );
 
-    if (!copied) {
-      alert("تعذر نسخ الرقم الآلي تلقائياً، الرقم هو: " + electronicNo);
-    }
+    window.open(MOJ_PORTAL_URL, "_blank", "noopener,noreferrer");
   }
 
   async function getSessions() {
