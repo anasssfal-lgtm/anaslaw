@@ -68,28 +68,6 @@ function CaseProfile() {
       return;
     }
 
-    setEditForm({
-      client_name: caseData.client_name || "",
-      case_number: caseData.case_number || "",
-      file_no: caseData.file_no || "",
-      case_type: caseData.case_type || "",
-      court: caseData.court || "",
-      lawyer: caseData.lawyer || "",
-      opponent_name: caseData.opponent_name || "",
-      status: caseData.status || "",
-      verdict: caseData.verdict || "",
-      notes: caseData.notes || "",
-      chamber: caseData.chamber || "",
-      floor: caseData.floor || "",
-      jury_no: caseData.jury_no || "",
-      electronic_no: caseData.electronic_no || "",
-      case_start_date: caseData.case_start_date || "",
-      client_status: caseData.client_status || "",
-      opponent_status: caseData.opponent_status || "",
-      old_verdict_date: caseData.old_verdict_date || "",
-      old_verdict_result: caseData.old_verdict_result || "",
-    });
-
     const normalizedCaseNumber = clean(caseData.case_number);
 
     const { data: excelRows, error: excelError } = await supabase
@@ -124,6 +102,34 @@ function CaseProfile() {
 
     setCaseItem(caseData);
     setExcelCase(excel);
+
+    setEditForm({
+      client_name: caseData.client_name || "",
+      case_number: caseData.case_number || "",
+      file_no: caseData.file_no || "",
+      case_type: caseData.case_type || "",
+      court: caseData.court || "",
+      lawyer: caseData.lawyer || "",
+      opponent_name: caseData.opponent_name || "",
+      status: caseData.status || "",
+      verdict: caseData.verdict || "",
+      notes: caseData.notes || "",
+      chamber: caseData.chamber || clean(excel?.Chamber) || "",
+      floor: caseData.floor || clean(excel?.Floor) || "",
+      jury_no: caseData.jury_no || clean(excel?.JuryNo) || "",
+      electronic_no:
+        caseData.electronic_no || clean(excel?.ElectronicNo) || "",
+      case_start_date:
+        caseData.case_start_date || clean(excel?.CaseStartDate) || "",
+      client_status:
+        caseData.client_status || clean(excel?.ClientStatus) || "",
+      opponent_status:
+        caseData.opponent_status || clean(excel?.OpponentStatus) || "",
+      old_verdict_date:
+        caseData.old_verdict_date || clean(excel?.VerdictDate) || "",
+      old_verdict_result:
+        caseData.old_verdict_result || clean(excel?.VerdictResult) || "",
+    });
 
     const linkedFileNo =
       clean(caseData.file_no) || clean(excel?.FileNo);
@@ -235,15 +241,21 @@ function CaseProfile() {
       status: caseItem.status || "",
       verdict: caseItem.verdict || "",
       notes: caseItem.notes || "",
-      chamber: caseItem.chamber || "",
-      floor: caseItem.floor || "",
-      jury_no: caseItem.jury_no || "",
-      electronic_no: caseItem.electronic_no || "",
-      case_start_date: caseItem.case_start_date || "",
-      client_status: caseItem.client_status || "",
-      opponent_status: caseItem.opponent_status || "",
-      old_verdict_date: caseItem.old_verdict_date || "",
-      old_verdict_result: caseItem.old_verdict_result || "",
+      chamber: caseItem.chamber || clean(excelCase?.Chamber) || "",
+      floor: caseItem.floor || clean(excelCase?.Floor) || "",
+      jury_no: caseItem.jury_no || clean(excelCase?.JuryNo) || "",
+      electronic_no:
+        caseItem.electronic_no || clean(excelCase?.ElectronicNo) || "",
+      case_start_date:
+        caseItem.case_start_date || clean(excelCase?.CaseStartDate) || "",
+      client_status:
+        caseItem.client_status || clean(excelCase?.ClientStatus) || "",
+      opponent_status:
+        caseItem.opponent_status || clean(excelCase?.OpponentStatus) || "",
+      old_verdict_date:
+        caseItem.old_verdict_date || clean(excelCase?.VerdictDate) || "",
+      old_verdict_result:
+        caseItem.old_verdict_result || clean(excelCase?.VerdictResult) || "",
     });
 
     setEditing(false);
