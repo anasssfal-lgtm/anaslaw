@@ -17,6 +17,7 @@ function Sessions() {
   const [printMode, setPrintMode] = useState(false);
 
   const [excelLevels, setExcelLevels] = useState([]);
+  const [casesList, setCasesList] = useState([]);
 
   function getKuwaitDate(daysToAdd = 0) {
     const now = new Date();
@@ -103,6 +104,7 @@ function Sessions() {
   useEffect(() => {
     getSessions();
     getExcelLevels();
+    getCasesList();
   }, []);
 
   async function getExcelLevels() {
@@ -118,8 +120,38 @@ function Sessions() {
     setExcelLevels(data || []);
   }
 
+  async function getCasesList() {
+    const { data, error } = await supabase
+      .from("cases")
+      .select("id, file_no");
+
+    if (error) {
+      console.log("CASES LIST ERROR:", error);
+      return;
+    }
+
+    setCasesList(data || []);
+  }
+
   function normalizeCaseNo(value) {
     return value ? String(value).trim() : "";
+  }
+
+  const caseIdByFileNo = useMemo(() => {
+    const map = new Map();
+    casesList.forEach((row) => {
+      const key = normalizeCaseNo(row.file_no);
+      if (key) map.set(key, row.id);
+    });
+    return map;
+  }, [casesList]);
+
+  function resolveCaseId(session) {
+    if (session?.cases?.id) return session.cases.id;
+    if (session?.case_id) return session.case_id;
+
+    const fileNo = normalizeCaseNo(session?.file_no);
+    return fileNo ? caseIdByFileNo.get(fileNo) || null : null;
   }
 
   const electronicNoByCaseNo = useMemo(() => {
@@ -1125,9 +1157,9 @@ function Sessions() {
               </button>
             </div>
 
-            {(selectedSession.cases?.id || selectedSession.case_id) && (
+            {resolveCaseId(selectedSession) && (
               <Link
-                to={`/cases/${selectedSession.cases?.id || selectedSession.case_id}`}
+                to={`/cases/${resolveCaseId(selectedSession)}`}
                 className="open-case-file-btn"
               >
                 📂 فتح ملف القضية الكامل
