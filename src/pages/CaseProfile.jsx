@@ -1,9 +1,10 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase";
 
 function CaseProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [caseItem, setCaseItem] = useState(null);
   const [excelCase, setExcelCase] = useState(null);
@@ -15,6 +16,10 @@ function CaseProfile() {
   const [showNoticeForm, setShowNoticeForm] = useState(false);
   const [noticeForm, setNoticeForm] = useState({});
   const [savingNotice, setSavingNotice] = useState(false);
+
+  const [showSessionForm, setShowSessionForm] = useState(false);
+  const [sessionForm, setSessionForm] = useState({});
+  const [savingSession, setSavingSession] = useState(false);
 
   const [profilePrintMode, setProfilePrintMode] = useState(false);
   const [noticeToPrint, setNoticeToPrint] = useState(null);
@@ -178,6 +183,24 @@ function CaseProfile() {
     await loadCase();
   }
 
+  async function deleteCase() {
+    const ok = confirm(
+      "تحذير: سيتم حذف القضية وكل جلساتها نهائياً. هل أنت متأكد؟"
+    );
+    if (!ok) return;
+
+    await supabase.from("sessions").delete().eq("case_id", id);
+
+    const { error } = await supabase.from("cases").delete().eq("id", id);
+
+    if (error) {
+      alert("خطأ أثناء حذف القضية: " + error.message);
+      return;
+    }
+
+    navigate("/cases");
+  }
+
   function cancelEdit() {
     setEditForm({
       client_name: caseItem.client_name || "",
@@ -232,6 +255,72 @@ function CaseProfile() {
     }
 
     await loadNotices();
+  }
+
+  function openSessionForm() {
+    setSessionForm({
+      session_date: "",
+      session_time: "",
+      location: "",
+      hearing_type: "",
+      lawyer: clean(caseItem?.lawyer) || "",
+      notes: "",
+    });
+    setShowSessionForm(true);
+  }
+
+  function cancelSessionForm() {
+    setShowSessionForm(false);
+  }
+
+  async function saveSession() {
+    if (!sessionForm.session_date) {
+      alert("اختر تاريخ الجلسة");
+      return;
+    }
+
+    setSavingSession(true);
+
+    const { error } = await supabase.from("sessions").insert([
+      {
+        case_id: id,
+        file_no: caseItem?.file_no || "",
+        client_name: caseItem?.client_name || "",
+        session_date: sessionForm.session_date,
+        session_time: sessionForm.session_time || "",
+        location: sessionForm.location || "",
+        hearing_type: sessionForm.hearing_type || "",
+        lawyer: sessionForm.lawyer || "",
+        notes: sessionForm.notes || "",
+      },
+    ]);
+
+    setSavingSession(false);
+
+    if (error) {
+      alert("خطأ أثناء حفظ الجلسة: " + error.message);
+      return;
+    }
+
+    setShowSessionForm(false);
+    await loadCase();
+  }
+
+  async function deleteSession(sessionId) {
+    const ok = confirm("هل تريد حذف هذه الجلسة نهائياً؟");
+    if (!ok) return;
+
+    const { error } = await supabase
+      .from("sessions")
+      .delete()
+      .eq("id", sessionId);
+
+    if (error) {
+      alert("خطأ أثناء حذف الجلسة: " + error.message);
+      return;
+    }
+
+    await loadCase();
   }
 
   async function saveNotice() {
@@ -631,6 +720,15 @@ function CaseProfile() {
           cursor: pointer;
         }
 
+        .btn-delete {
+          background: #991b1b;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
         @media (max-width: 800px) {
           .info-grid,
           .edit-grid,
@@ -886,6 +984,16 @@ function CaseProfile() {
               >
                 🖨️ طباعة
               </button>
+
+              {!editing && (
+                <button
+                  type="button"
+                  className="btn-delete"
+                  onClick={deleteCase}
+                >
+                  🗑️ حذف القضية
+                </button>
+              )}
             </div>
 
             {!editing && (
@@ -1329,13 +1437,138 @@ function CaseProfile() {
           </section>
 
           <section className="panel">
-            <h2>📅 جلسات القضية ({sessions.length})</h2>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "10px",
+              }}
+            >
+              <h2>📅 جلسات القضية ({sessions.length})</h2>
 
-            {sessions.length === 0 ? (
+              {!showSessionForm && (
+                <button
+                  type="button"
+                  className="btn-notice"
+                  onClick={openSessionForm}
+                >
+                  ➕ جلسة جديدة
+                </button>
+              )}
+            </div>
+
+            {showSessionForm && (
+              <div className="edit-grid">
+                <div className="edit-field">
+                  <label>تاريخ الجلسة</label>
+                  <input
+                    type="date"
+                    value={sessionForm.session_date || ""}
+                    onChange={(e) =>
+                      setSessionForm({
+                        ...sessionForm,
+                        session_date: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>وقت الجلسة</label>
+                  <input
+                    value={sessionForm.session_time || ""}
+                    onChange={(e) =>
+                      setSessionForm({
+                        ...sessionForm,
+                        session_time: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>المكان</label>
+                  <input
+                    value={sessionForm.location || ""}
+                    onChange={(e) =>
+                      setSessionForm({
+                        ...sessionForm,
+                        location: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>نوع الجلسة</label>
+                  <input
+                    value={sessionForm.hearing_type || ""}
+                    onChange={(e) =>
+                      setSessionForm({
+                        ...sessionForm,
+                        hearing_type: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field">
+                  <label>المسؤول</label>
+                  <input
+                    value={sessionForm.lawyer || ""}
+                    onChange={(e) =>
+                      setSessionForm({
+                        ...sessionForm,
+                        lawyer: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="edit-field full-width" style={{ gridColumn: "span 2" }}>
+                  <label>ملاحظات</label>
+                  <textarea
+                    rows={3}
+                    value={sessionForm.notes || ""}
+                    onChange={(e) =>
+                      setSessionForm({
+                        ...sessionForm,
+                        notes: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div style={{ display: "flex", gap: "10px", gridColumn: "span 2" }}>
+                  <button
+                    type="button"
+                    className="btn-save"
+                    onClick={saveSession}
+                    disabled={savingSession}
+                  >
+                    {savingSession ? "جاري الحفظ..." : "💾 حفظ الجلسة"}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn-cancel"
+                    onClick={cancelSessionForm}
+                  >
+                    ❌ إلغاء
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!showSessionForm && sessions.length === 0 && (
               <p className="empty">
                 لا توجد جلسات مرتبطة بهذه القضية
               </p>
-            ) : (
+            )}
+
+            {!showSessionForm &&
               sessions.map((session) => {
                 const today = new Date().toISOString().split("T")[0];
 
@@ -1379,10 +1612,20 @@ function CaseProfile() {
                       <b>ملاحظات</b>
                       <span>{clean(session.notes) || "—"}</span>
                     </div>
+
+                    <div>
+                      <b> </b>
+                      <button
+                        type="button"
+                        className="btn-delete"
+                        onClick={() => deleteSession(session.id)}
+                      >
+                        🗑️ حذف
+                      </button>
+                    </div>
                   </div>
                 );
-              })
-            )}
+              })}
           </section>
         </>
       )}
