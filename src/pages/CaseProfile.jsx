@@ -21,6 +21,10 @@ function CaseProfile() {
   const [sessionForm, setSessionForm] = useState({});
   const [savingSession, setSavingSession] = useState(false);
 
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [sessionEditForm, setSessionEditForm] = useState({});
+  const [savingSessionEdit, setSavingSessionEdit] = useState(false);
+
   const [profilePrintMode, setProfilePrintMode] = useState(false);
   const [noticeToPrint, setNoticeToPrint] = useState(null);
   const printExitRef = useRef(null);
@@ -320,6 +324,54 @@ function CaseProfile() {
       return;
     }
 
+    await loadCase();
+  }
+
+  function startEditSession(session) {
+    setEditingSessionId(session.id);
+    setSessionEditForm({
+      session_date: session.session_date || "",
+      session_time: session.session_time || "",
+      location: session.location || "",
+      hearing_type: session.hearing_type || "",
+      lawyer: session.lawyer || "",
+      notes: session.notes || "",
+    });
+  }
+
+  function cancelEditSession() {
+    setEditingSessionId(null);
+    setSessionEditForm({});
+  }
+
+  async function saveEditSession(sessionId) {
+    if (!sessionEditForm.session_date) {
+      alert("اختر تاريخ الجلسة");
+      return;
+    }
+
+    setSavingSessionEdit(true);
+
+    const { error } = await supabase
+      .from("sessions")
+      .update({
+        session_date: sessionEditForm.session_date,
+        session_time: sessionEditForm.session_time || "",
+        location: sessionEditForm.location || "",
+        hearing_type: sessionEditForm.hearing_type || "",
+        lawyer: sessionEditForm.lawyer || "",
+        notes: sessionEditForm.notes || "",
+      })
+      .eq("id", sessionId);
+
+    setSavingSessionEdit(false);
+
+    if (error) {
+      alert("خطأ أثناء حفظ تعديل الجلسة: " + error.message);
+      return;
+    }
+
+    setEditingSessionId(null);
     await loadCase();
   }
 
@@ -1576,6 +1628,111 @@ function CaseProfile() {
                   session.session_date &&
                   session.session_date >= today;
 
+                if (editingSessionId === session.id) {
+                  return (
+                    <div className="edit-grid" key={session.id} style={{ marginBottom: "10px" }}>
+                      <div className="edit-field">
+                        <label>تاريخ الجلسة</label>
+                        <input
+                          type="date"
+                          value={sessionEditForm.session_date || ""}
+                          onChange={(e) =>
+                            setSessionEditForm({
+                              ...sessionEditForm,
+                              session_date: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="edit-field">
+                        <label>وقت الجلسة</label>
+                        <input
+                          value={sessionEditForm.session_time || ""}
+                          onChange={(e) =>
+                            setSessionEditForm({
+                              ...sessionEditForm,
+                              session_time: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="edit-field">
+                        <label>المكان</label>
+                        <input
+                          value={sessionEditForm.location || ""}
+                          onChange={(e) =>
+                            setSessionEditForm({
+                              ...sessionEditForm,
+                              location: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="edit-field">
+                        <label>نوع الجلسة</label>
+                        <input
+                          value={sessionEditForm.hearing_type || ""}
+                          onChange={(e) =>
+                            setSessionEditForm({
+                              ...sessionEditForm,
+                              hearing_type: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="edit-field">
+                        <label>المسؤول</label>
+                        <input
+                          value={sessionEditForm.lawyer || ""}
+                          onChange={(e) =>
+                            setSessionEditForm({
+                              ...sessionEditForm,
+                              lawyer: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="edit-field full-width" style={{ gridColumn: "span 2" }}>
+                        <label>ملاحظات</label>
+                        <textarea
+                          rows={3}
+                          value={sessionEditForm.notes || ""}
+                          onChange={(e) =>
+                            setSessionEditForm({
+                              ...sessionEditForm,
+                              notes: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div style={{ display: "flex", gap: "10px", gridColumn: "span 2" }}>
+                        <button
+                          type="button"
+                          className="btn-save"
+                          onClick={() => saveEditSession(session.id)}
+                          disabled={savingSessionEdit}
+                        >
+                          {savingSessionEdit ? "جاري الحفظ..." : "💾 حفظ"}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn-cancel"
+                          onClick={cancelEditSession}
+                        >
+                          ❌ إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     className={`session-card ${
@@ -1613,8 +1770,16 @@ function CaseProfile() {
                       <span>{clean(session.notes) || "—"}</span>
                     </div>
 
-                    <div>
+                    <div style={{ flexDirection: "row", gap: "8px" }}>
                       <b> </b>
+                      <button
+                        type="button"
+                        className="btn-edit"
+                        onClick={() => startEditSession(session)}
+                      >
+                        ✏️ تعديل
+                      </button>
+
                       <button
                         type="button"
                         className="btn-delete"
