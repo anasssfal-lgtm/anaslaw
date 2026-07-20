@@ -374,6 +374,8 @@ textarea{
   border-radius:10px;
   font-size:15px;
   transition:.3s;
+  background:#fff;
+  color:#222;
 }
 
 input:focus,
