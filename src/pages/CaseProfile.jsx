@@ -273,6 +273,9 @@ function CaseProfile() {
       .insert([
         {
           client_name: caseItem.client_name || "",
+          case_number: "",
+          file_no: "",
+          court: "",
           opponent_name: caseItem.opponent_name || "",
           case_type: caseItem.case_type || "",
           lawyer: caseItem.lawyer || "",
