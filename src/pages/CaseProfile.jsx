@@ -29,6 +29,10 @@ function CaseProfile() {
   const [noticeToPrint, setNoticeToPrint] = useState(null);
   const printExitRef = useRef(null);
 
+  const [parentCase, setParentCase] = useState(null);
+  const [childCases, setChildCases] = useState([]);
+  const [creatingAppeal, setCreatingAppeal] = useState(false);
+
   useEffect(() => {
     loadCase();
     loadNotices();
@@ -155,6 +159,33 @@ function CaseProfile() {
     }
 
     setSessions(sessionsData || []);
+
+    if (caseData.parent_case_id) {
+      const { data: parentData, error: parentError } = await supabase
+        .from("cases")
+        .select("id, client_name, case_number, case_level")
+        .eq("id", caseData.parent_case_id)
+        .maybeSingle();
+
+      if (parentError) {
+        console.log("PARENT CASE ERROR:", parentError);
+      }
+
+      setParentCase(parentData || null);
+    } else {
+      setParentCase(null);
+    }
+
+    const { data: childData, error: childError } = await supabase
+      .from("cases")
+      .select("id, client_name, case_number, case_level")
+      .eq("parent_case_id", id);
+
+    if (childError) {
+      console.log("CHILD CASES ERROR:", childError);
+    }
+
+    setChildCases(childData || []);
   }
 
   async function loadNotices() {
@@ -227,6 +258,45 @@ function CaseProfile() {
     }
 
     navigate("/cases");
+  }
+
+  async function createAppealCase() {
+    const ok = confirm(
+      "بينسوى ملف قضية جديد منفصل تماماً لدرجة الاستئناف (معبّى ببيانات الموكل والخصم)، بدون أي تعديل على ملف أول درجة الحالي. تكمل؟"
+    );
+    if (!ok) return;
+
+    setCreatingAppeal(true);
+
+    const { data: newCase, error } = await supabase
+      .from("cases")
+      .insert([
+        {
+          client_name: caseItem.client_name || "",
+          opponent_name: caseItem.opponent_name || "",
+          case_type: caseItem.case_type || "",
+          lawyer: caseItem.lawyer || "",
+          client_status: caseItem.client_status || "",
+          opponent_status: caseItem.opponent_status || "",
+          notes: caseItem.notes || "",
+          status: "متداولة",
+          verdict: "",
+          old_verdict_result: caseItem.verdict || "",
+          parent_case_id: id,
+          case_level: "استئناف",
+        },
+      ])
+      .select()
+      .single();
+
+    setCreatingAppeal(false);
+
+    if (error) {
+      alert("خطأ أثناء إنشاء ملف الاستئناف: " + error.message);
+      return;
+    }
+
+    navigate(`/cases/${newCase.id}`);
   }
 
   function cancelEdit() {
@@ -820,6 +890,25 @@ function CaseProfile() {
           cursor: pointer;
         }
 
+        .case-level-links {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 10px;
+          margin: 0 0 15px;
+        }
+
+        .case-level-links a {
+          background: #fef3c7;
+          color: #92400e;
+          border: 1px solid #fde68a;
+          padding: 6px 14px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: bold;
+        }
+
         @media (max-width: 800px) {
           .info-grid,
           .edit-grid,
@@ -1076,6 +1165,19 @@ function CaseProfile() {
                 🖨️ طباعة
               </button>
 
+              {!editing && clean(caseItem.verdict) && (
+                <button
+                  type="button"
+                  className="btn-notice"
+                  onClick={createAppealCase}
+                  disabled={creatingAppeal}
+                >
+                  {creatingAppeal
+                    ? "جاري الإنشاء..."
+                    : "➕ إضافة ملف استئناف"}
+                </button>
+              )}
+
               {!editing && (
                 <button
                   type="button"
@@ -1086,6 +1188,22 @@ function CaseProfile() {
                 </button>
               )}
             </div>
+
+            {(parentCase || childCases.length > 0) && (
+              <div className="case-level-links">
+                {parentCase && (
+                  <Link to={`/cases/${parentCase.id}`}>
+                    ⬅️ ملف الدرجة السابقة ({parentCase.case_number || parentCase.client_name})
+                  </Link>
+                )}
+
+                {childCases.map((child) => (
+                  <Link to={`/cases/${child.id}`} key={child.id}>
+                    ➡️ ملف {child.case_level || "الاستئناف"} ({child.case_number || child.client_name})
+                  </Link>
+                ))}
+              </div>
+            )}
 
             {!editing && (
               <div className="info-grid">
