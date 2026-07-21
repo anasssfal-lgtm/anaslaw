@@ -28,6 +28,7 @@ function CaseProfile() {
   const [profilePrintMode, setProfilePrintMode] = useState(false);
   const [noticeToPrint, setNoticeToPrint] = useState(null);
   const printExitRef = useRef(null);
+  const creatingAppealRef = useRef(false);
 
   const [parentCase, setParentCase] = useState(null);
   const [childCases, setChildCases] = useState([]);
@@ -261,11 +262,15 @@ function CaseProfile() {
   }
 
   async function createAppealCase() {
+    if (creatingAppealRef.current) return;
+
     const ok = confirm(
       "بينسوى ملف قضية جديد منفصل تماماً لدرجة الاستئناف (معبّى ببيانات الموكل والخصم)، بدون أي تعديل على ملف أول درجة الحالي. تكمل؟"
     );
     if (!ok) return;
 
+    if (creatingAppealRef.current) return;
+    creatingAppealRef.current = true;
     setCreatingAppeal(true);
 
     const { data: newCase, error } = await supabase
@@ -295,6 +300,7 @@ function CaseProfile() {
     setCreatingAppeal(false);
 
     if (error) {
+      creatingAppealRef.current = false;
       alert("خطأ أثناء إنشاء ملف الاستئناف: " + error.message);
       return;
     }
