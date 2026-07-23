@@ -7,6 +7,7 @@ import Cases from "./pages/Cases";
 import Sessions from "./pages/Sessions";
 import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
+import Templates from "./pages/Templates";
 import Settings from "./pages/Settings";
 import CaseProfile from "./pages/CaseProfile";
 import Login from "./pages/Login";
@@ -63,6 +64,7 @@ function App() {
             <Link to="/cases">القضايا</Link>
             <Link to="/sessions">الجلسات</Link>
             <Link to="/clients">الموكلون</Link>
+            <Link to="/templates">النماذج</Link>
             <Link to="/reports">التقارير</Link>
             <button
               onClick={handleLogout}
@@ -80,6 +82,7 @@ function App() {
             <Route path="/cases/:id" element={<CaseProfile />} />
             <Route path="/sessions" element={<Sessions />} />
             <Route path="/clients" element={<Clients />} />
+            <Route path="/templates" element={<Templates />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
