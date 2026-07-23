@@ -32,7 +32,7 @@ function Templates() {
       <h1>📄 النماذج</h1>
 
       <p style={{ color: "#888", marginBottom: "20px" }}>
-        اضغط على أي نموذج لتحميله وفتحه بـ Word وتعبئته يدوياً.
+        اضغط على أي نموذج ليفتح، وبعدها اختر "فتح بواسطة Word" لتعبئته يدوياً.
       </p>
 
       <div
@@ -46,7 +46,8 @@ function Templates() {
           <a
             key={tpl.file}
             href={tpl.file}
-            download
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               display: "block",
               background: "#f9f9f9",
@@ -65,7 +66,7 @@ function Templates() {
               {tpl.description}
             </div>
             <div style={{ marginTop: "10px", color: "#7c1c1c", fontSize: "13px", fontWeight: "bold" }}>
-              ⬇️ تحميل
+              📂 فتح
             </div>
           </a>
         ))}
