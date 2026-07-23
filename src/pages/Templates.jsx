@@ -46,8 +46,6 @@ function Templates() {
           <a
             key={tpl.file}
             href={tpl.file}
-            target="_blank"
-            rel="noopener noreferrer"
             style={{
               display: "block",
               background: "#f9f9f9",
