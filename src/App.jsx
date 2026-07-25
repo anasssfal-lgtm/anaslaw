@@ -8,6 +8,7 @@ import Sessions from "./pages/Sessions";
 import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
 import Templates from "./pages/Templates";
+import LawsuitTemplate from "./pages/LawsuitTemplate";
 import Settings from "./pages/Settings";
 import CaseProfile from "./pages/CaseProfile";
 import Login from "./pages/Login";
@@ -83,6 +84,7 @@ function App() {
             <Route path="/sessions" element={<Sessions />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/templates" element={<Templates />} />
+            <Route path="/templates/saheefat-dawa" element={<LawsuitTemplate />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
