@@ -15,6 +15,12 @@
         { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
       ]
+    },
+    {
+      "source": "/templates/(.*).docx",
+      "headers": [
+        { "key": "Content-Disposition", "value": "attachment" }
+      ]
     }
   ]
 }
