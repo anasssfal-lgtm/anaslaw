@@ -13,6 +13,7 @@ export default defineConfig({
       workbox: {
         clientsClaim: true,
         skipWaiting: true,
+        navigateFallbackDenylist: [/\.[a-zA-Z0-9]+$/],
       },
       manifest: {
         name: 'مكتب أنس الحيدر للمحاماة',
