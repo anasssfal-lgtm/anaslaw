@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 const templates = [
   {
     name: "توكيل خاص بالقضايا",
-    description: "خطاب لوزارة العدل - إدارة التسجيل العقاري والتوثيقات",
+    description: "خطاب لوزارة العدل (فيه تواقيع المحامين، يفتح بـ Word)",
     file: "/templates/tawkeel-khas-bil-qadaya.docx",
   },
   {
     name: "طلب استصدار أمر أداء",
-    description: "طلب موجّه لقاضي المحكمة لاستصدار أمر أداء",
-    file: "/templates/talab-istisdar-amr-adaa.docx",
+    description: "نموذج تعبّى داخل الموقع وتطبعه مباشرة",
+    route: "/templates/amr-adaa",
   },
   {
     name: "صحيفة دعوى",
@@ -18,13 +18,13 @@ const templates = [
   },
   {
     name: "صحيفة تظلم من أمر منع سفر",
-    description: "نموذج تظلم من أمر منع سفر مودع بملف تنفيذ",
-    file: "/templates/saheefat-tazallum-man-safar.docx",
+    description: "نموذج تعبّى داخل الموقع وتطبعه مباشرة",
+    route: "/templates/tazallum",
   },
   {
     name: "صحيفة استئناف",
-    description: "نموذج استئناف حكم صادر بدعوى",
-    file: "/templates/saheefat-istinaf.docx",
+    description: "نموذج تعبّى داخل الموقع وتطبعه مباشرة",
+    route: "/templates/istinaf",
   },
 ];
 

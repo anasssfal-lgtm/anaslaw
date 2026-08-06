@@ -9,6 +9,9 @@ import Clients from "./pages/Clients";
 import Reports from "./pages/Reports";
 import Templates from "./pages/Templates";
 import LawsuitTemplate from "./pages/LawsuitTemplate";
+import AmrAdaaTemplate from "./pages/AmrAdaaTemplate";
+import TazallumTemplate from "./pages/TazallumTemplate";
+import IstinafTemplate from "./pages/IstinafTemplate";
 import Settings from "./pages/Settings";
 import CaseProfile from "./pages/CaseProfile";
 import Login from "./pages/Login";
@@ -85,6 +88,9 @@ function App() {
             <Route path="/clients" element={<Clients />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/templates/saheefat-dawa" element={<LawsuitTemplate />} />
+            <Route path="/templates/amr-adaa" element={<AmrAdaaTemplate />} />
+            <Route path="/templates/tazallum" element={<TazallumTemplate />} />
+            <Route path="/templates/istinaf" element={<IstinafTemplate />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
