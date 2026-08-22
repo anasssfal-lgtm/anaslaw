@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 function LawsuitTemplate() {
   const [printMode, setPrintMode] = useState(false);
+
+  useEffect(() => {
+    return () => document.body.classList.remove("print-mode");
+  }, []);
 
   const [form, setForm] = useState({
     lawyer: "",
@@ -387,7 +391,7 @@ function LawsuitTemplate() {
             <p>
               <span className="underline bold">أولاً:</span> بقبول الدعوى شكلاً.
             </p>
-            <p>
+            <p style={{ whiteSpace: "pre-wrap" }}>
               <span className="underline bold">ثانياً:</span>{" "}
               {form.claims || "—"}
             </p>

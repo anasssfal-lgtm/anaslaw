@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 function AmrAdaaTemplate() {
   const [printMode, setPrintMode] = useState(false);
+
+  useEffect(() => {
+    return () => document.body.classList.remove("print-mode");
+  }, []);
 
   const [form, setForm] = useState({
     lawyer: "",
@@ -304,6 +308,9 @@ function AmrAdaaTemplate() {
           </div>
 
           <div className="template-doc">
+            <p className="center bold">وكيل الطالب: {form.lawyer || "—"}</p>
+            <p className="center bold">المحامي</p>
+
             <h2 className="center underline">طلب استصدار أمر أداء</h2>
 
             <p className="bold">

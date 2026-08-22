@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 function IstinafTemplate() {
   const [printMode, setPrintMode] = useState(false);
+
+  useEffect(() => {
+    return () => document.body.classList.remove("print-mode");
+  }, []);
 
   const [form, setForm] = useState({
     lawyer: "",
@@ -19,10 +23,12 @@ function IstinafTemplate() {
     address_street: "",
     address_house: "",
     address_electronic_no: "",
+    appellee_name: "",
+    appellee_nationality: "",
+    appellee_civil_id: "",
     appellee_case_no: "",
     appellee_circuit: "",
     ruling_text: "",
-    ruling_date: "",
     substantive_reasons: "",
     hearing_court_circuit: "",
     hearing_day: "",
@@ -258,6 +264,21 @@ function IstinafTemplate() {
             </div>
 
             <div className="edit-field">
+              <label>اسم المستأنف ضده</label>
+              <input value={form.appellee_name} onChange={(e) => set("appellee_name", e.target.value)} />
+            </div>
+
+            <div className="edit-field">
+              <label>جنسية المستأنف ضده</label>
+              <input value={form.appellee_nationality} onChange={(e) => set("appellee_nationality", e.target.value)} />
+            </div>
+
+            <div className="edit-field">
+              <label>الرقم المدني للمستأنف ضده</label>
+              <input value={form.appellee_civil_id} onChange={(e) => set("appellee_civil_id", e.target.value)} />
+            </div>
+
+            <div className="edit-field">
               <label>رقم دعوى المستأنف ضده (الدعوى الأصلية)</label>
               <input value={form.appellee_case_no} onChange={(e) => set("appellee_case_no", e.target.value)} placeholder="مثال: 1234/2026" />
             </div>
@@ -350,7 +371,9 @@ function IstinafTemplate() {
             <p>أنا مندوب الإعلان بمحكمة الاستئناف بوزارة العدل قد انتقلت وأعلنت: ـ</p>
 
             <p className="bold">
-              السيد/ - الجنسية - ب.م ( ) ويعلن في: - قطعة{" "}
+              السيد/ {form.appellee_name || "..........."} - الجنسية{" "}
+              {form.appellee_nationality || "......"} - ب.م (
+              {form.appellee_civil_id || "......"}) ويعلن في: - قطعة{" "}
               {form.address_block || " "} - شارع {form.address_street || " "} -
               منزل {form.address_house || " "} - الرقم الآلي للعنوان (
               {form.address_electronic_no || " "}).
@@ -388,7 +411,7 @@ function IstinafTemplate() {
               <p className="quote">"ميعاد الإستئناف ثلاثون يوماً ما لم ينص القانون على غير ذلك"</p>
               <p>
                 ولما كان الحكم المستأنف صدر بجلسة{" "}
-                {form.ruling_date || ".../.../2026"} الأمر الذي يكون معه
+                {form.original_case_session || ".../.../2026"} الأمر الذي يكون معه
                 الإستئناف أقيم في الميعاد القانوني فهو مقبول شكلاً.
               </p>
             </div>
@@ -447,7 +470,7 @@ function IstinafTemplate() {
               <span className="underline bold">أولاً:</span> بقبول
               الإستئناف شكلاً.
             </p>
-            <p>
+            <p style={{ whiteSpace: "pre-wrap" }}>
               <span className="underline bold">ثانياً:</span>{" "}
               {form.claims || "—"}
             </p>
