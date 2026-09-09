@@ -23,7 +23,7 @@ function Dashboard() {
     const { data: casesData } = await supabase.from("cases").select("*");
     const { data: sessionsData } = await supabase
       .from("sessions")
-      .select("*, cases(client_name, case_number, court, lawyer, file_no)")
+      .select("*")
       .gte("session_date", today)
       .order("session_date", { ascending: true });
     setCases(casesData || []);
@@ -34,10 +34,17 @@ function Dashboard() {
   const tomorrowSessions = sessions.filter((s) => s.session_date === tomorrow);
   const weekSessions = sessions.filter((s) => s.session_date >= today && s.session_date <= nextWeek);
 
-  const activeSessionCases = new Set(sessions.map(s => s.case_id).filter(Boolean));
+  function caseHasUpcomingSession(caseItem) {
+    return sessions.some(
+      (s) =>
+        Number(s.case_id) === Number(caseItem.id) ||
+        (caseItem.file_no && String(s.file_no).trim() === String(caseItem.file_no).trim())
+    );
+  }
+
   const activeCasesWithSessions = cases.filter((c) => {
     const s = c.file_status || c.status || "";
-    return !s.includes("مؤرشفة") && activeSessionCases.has(c.id);
+    return !s.includes("مؤرشفة") && caseHasUpcomingSession(c);
   });
 
   function formatDate(dateStr) {
